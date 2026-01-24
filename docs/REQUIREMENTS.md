@@ -124,7 +124,32 @@ Alle Antworten werden im ChurchTools Key-Value-Store gespeichert:
 - Buttons nebeneinander, touch-freundlich (min. 44px)
 - Kompakte Darstellung der Antworten anderer
 - Kommentare anderer unter den Antworten (nur wenn vorhanden)
-- Auf Desktop: mehrere Events nebeneinander möglich
+
+#### Wireframe (Desktop):
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│ Dienst-Umfrage                                                                      │
+├─────────────────────────────────────────────────────────────────────────────────────┤
+│ So, 2.2.2025 - Gottesdienst                                                         │
+├────────────────────┬────────────────────┬───────────────────┬───────────────────────┤
+│ Dienst             │ Meine Antwort      │ Besetzung         │ Andere Antworten      │
+├────────────────────┼────────────────────┼───────────────────┼───────────────────────┤
+│ Lobpreis-Leitung   │ [✓] [?] [✗]        │ Max M. ✓          │ ✓ Anna, Peter         │
+│                    │ [Kommentar____]    │                   │ ? Lisa: "Nur bis 12"  │
+├────────────────────┼────────────────────┼───────────────────┼───────────────────────┤
+│ Keyboard           │ [✓] [?] [✗]        │ Offen             │ ? Tom: "Falls Auto"   │
+│                    │ [Kommentar____]    │                   │ ✗ Sarah               │
+├────────────────────┴────────────────────┴───────────────────┴───────────────────────┤
+│ So, 9.2.2025 - Gottesdienst                                                         │
+├────────────────────┬────────────────────┬───────────────────┬───────────────────────┤
+│ ...                │                    │                   │                       │
+└────────────────────┴────────────────────┴───────────────────┴───────────────────────┘
+```
+
+- Tabellarische Darstellung für bessere Übersicht
+- Alle Informationen auf einen Blick sichtbar
+- Kommentare inline bei den Antworten
 
 ### 5. Sicherheit
 - XSS-Schutz durch HTML-Escaping aller Benutzereingaben
