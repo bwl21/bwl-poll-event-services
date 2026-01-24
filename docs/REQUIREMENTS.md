@@ -95,6 +95,37 @@ Alle Antworten werden im ChurchTools Key-Value-Store gespeichert:
 - "Kommentar gespeichert ✓" bei Kommentar-Updates
 - "Fehler beim Speichern" bei Fehlern
 
+#### Wireframe (Mobile-First):
+
+```
+┌──────────────────────────────┐
+│ Dienst-Umfrage               │
+├──────────────────────────────┤
+│ So, 2.2.2025 - Gottesdienst  │
+├──────────────────────────────┤
+│ Lobpreis-Leitung             │
+│ [✓ Ja] [? Vllt] [✗ Nein]     │
+│ [Kommentar_______________]   │
+│ Besetzt: Max M. ✓            │
+│ Ja: Anna, Peter | ?: Lisa    │
+│ 💬 Anna: "Nur bis 12 Uhr"    │
+├──────────────────────────────┤
+│ Keyboard                     │
+│ [✓ Ja] [? Vllt] [✗ Nein]     │
+│ [Kommentar_______________]   │
+│ Offen | ?: Tom | ✗: Sarah    │
+│ 💬 Tom: "Falls Auto klappt"  │
+├──────────────────────────────┤
+│ So, 9.2.2025 - Gottesdienst  │
+│ ...                          │
+└──────────────────────────────┘
+```
+
+- Buttons nebeneinander, touch-freundlich (min. 44px)
+- Kompakte Darstellung der Antworten anderer
+- Kommentare anderer unter den Antworten (nur wenn vorhanden)
+- Auf Desktop: mehrere Events nebeneinander möglich
+
 ### 5. Sicherheit
 - XSS-Schutz durch HTML-Escaping aller Benutzereingaben
 - Authentifizierung über ChurchTools-Login
