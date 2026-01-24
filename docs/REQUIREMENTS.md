@@ -7,7 +7,13 @@ Diese ChurchTools-Erweiterung ermöglicht es Benutzern, ihre Verfügbarkeit für
 ## Funktionen
 
 ### 1. Event-Übersicht
-- **Zeitraum**: Standardmäßig werden Events für die nächsten 90 Tage angezeigt
+- **Zeitraum**: Konfigurierbarer Zeitraum mit Startdatum und Anzahl Tage
+  - Standard: Heute + 90 Tage
+  - Im UI einstellbar über Datepicker (Startdatum) und Eingabefeld (Anzahl Tage)
+  - Per URL-Parameter überschreibbar:
+    - `?start=2025-02-01` - Startdatum (ISO-Format YYYY-MM-DD)
+    - `?days=30` - Anzahl Tage
+    - Beispiel: `?start=2025-03-01&days=60`
 - **Filterung**: Es werden nur Events angezeigt, die Dienste enthalten, welche von mindestens einer der Gruppen des Benutzers besetzt werden können
 - **Darstellung**: Jedes Event wird mit folgenden Informationen angezeigt:
   - Event-Name
@@ -229,9 +235,17 @@ VITE_PASSWORD=ihr-passwort (nur für Entwicklung)
 ## Berechtigungen
 Benutzer können nur Events und Dienste sehen, für die sie aufgrund ihrer Gruppenzugehörigkeit berechtigt sind.
 
+### 6. Export für Disponenten
+- Excel-Export aller Umfrageantworten für den gewählten Zeitraum
+- Export enthält:
+  - Event (Name, Datum)
+  - Dienst
+  - Benutzer
+  - Antwort (Ja/Vielleicht/Nein)
+  - Kommentar
+  - Zeitstempel
+- Ermöglicht dem Disponenten die Auswertung und Planung außerhalb der Extension
+- Später: Integration mit separater Disponenten-Extension
+
 ## Zukünftige Erweiterungen (Optional)
-- Export-Funktion für Umfrageergebnisse
-- Admin-Ansicht zur Auswertung aller Antworten
-- Email-Benachrichtigungen bei neuen Events
 - Filtermöglichkeiten (z.B. nur Events einer bestimmten Gruppe)
-- Anpassbarer Zeitraum statt festem 90-Tage-Fenster
