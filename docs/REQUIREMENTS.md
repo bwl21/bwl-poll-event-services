@@ -25,7 +25,7 @@ Für jeden Dienst in einem Event kann der Benutzer seine Verfügbarkeit angeben:
 #### Kommentarfeld:
 - Jeder Dienst hat ein optionales Kommentarfeld
 - Automatisches Speichern nach 1 Sekunde (Debounce)
-- Rückmeldung bei erfolgreichem Speichern
+- finales Speichern beim klick auf einen der drei Buttons
 
 ### 3. Datenspeicherung
 Alle Antworten werden im ChurchTools Key-Value-Store gespeichert:
@@ -35,6 +35,7 @@ Alle Antworten werden im ChurchTools Key-Value-Store gespeichert:
 {
     eventId: number,        // ID des Events
     serviceId: number,      // ID des Dienstes
+    userId: number,         // ID des Benutzers (ermöglicht mehrere Benutzer pro Umfrage)
     response: 'yes' | 'maybe' | 'no' | null,  // Antwort des Benutzers
     comment: string,        // Optionaler Kommentar
     timestamp: string       // Zeitstempel der letzten Änderung (ISO 8601)
@@ -44,7 +45,34 @@ Alle Antworten werden im ChurchTools Key-Value-Store gespeichert:
 #### Storage-Hierarchie:
 - **Modul**: `bwl-poll-event-services`
 - **Kategorie**: `poll-responses`
-- **Werte**: Ein Wert pro Event-Dienst-Kombination
+- **Werte**: Ein Wert pro Event-Dienst-Benutzer-Kombination
+
+#### Speicherverhalten:
+- Pro Kombination aus `eventId`, `serviceId` und `userId` existiert genau ein Eintrag
+- Mehrere Benutzer können unabhängig voneinander ihre Verfügbarkeit für denselben Dienst angeben
+- Gibt ein Benutzer eine neue Antwort für einen bereits beantworteten Dienst ab, wird der bestehende Eintrag aktualisiert (nicht neu angelegt)
+- Der `timestamp` wird bei jeder Änderung aktualisiert
+
+#### Laden bestehender Eingaben:
+- Beim Öffnen der Seite werden die gespeicherten Antworten des aktuellen Benutzers geladen
+- Bereits beantwortete Dienste zeigen die gespeicherte Auswahl (Ja/Vielleicht/Nein) als aktiv an
+- Gespeicherte Kommentare werden in die Kommentarfelder eingetragen
+- Der Benutzer kann seine Eingaben jederzeit ändern
+
+#### Anzeige von Antworten anderer Benutzer:
+- Für jeden Dienst werden die Antworten aller Benutzer angezeigt
+- Die Anzeige zeigt pro Antworttyp die Namen der Benutzer:
+  - Ja: Liste der Benutzer, die zugesagt haben
+  - Vielleicht: Liste der Benutzer, die "Vielleicht" angegeben haben
+  - Nein: Liste der Benutzer, die abgesagt haben
+- Kommentare anderer Benutzer werden ebenfalls angezeigt (sofern vorhanden)
+
+#### Anzeige bestehender Besetzungen:
+- Bereits in ChurchTools eingetragene Besetzungen für einen Dienst werden angezeigt
+- Die Anzeige unterscheidet zwischen:
+  - Bestätigte Besetzungen (Person ist dem Dienst zugewiesen)
+  - Offene Anfragen (Person wurde angefragt, aber noch nicht bestätigt)
+- Ist ein Dienst bereits besetzt, wird dies deutlich gekennzeichnet
 
 ### 4. Benutzeroberfläche
 
