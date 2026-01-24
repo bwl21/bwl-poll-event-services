@@ -1,5 +1,6 @@
-import type { Person } from './utils/ct-types';
 import { churchtoolsClient } from '@churchtools/churchtools-client';
+import { fetchEventsWithServices, loadPollResponses } from './pollService';
+import { renderPollUI } from './ui';
 
 // only import reset.css in development mode to keep the production bundle small and to simulate CT environment
 if (import.meta.env.MODE === 'development') {
@@ -25,10 +26,36 @@ if (import.meta.env.MODE === 'development' && username && password) {
 const KEY = import.meta.env.VITE_KEY;
 export { KEY };
 
-const user = await churchtoolsClient.get<Person>(`/whoami`);
+// Get the app container
+const appContainer = document.querySelector<HTMLDivElement>('#app')!;
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
+// Show loading state
+appContainer.innerHTML = `
   <div style="display: flex; place-content: center; place-items: center; height: 100vh;">
-    <h1>Welcome ${[user.firstName, user.lastName].join(' ')}</h1>
+    <div style="text-align: center;">
+      <h2 style="color: #666;">Laden...</h2>
+      <p style="color: #999;">Dienste werden geladen...</p>
+    </div>
   </div>
 `;
+
+try {
+    // Load events and existing poll responses
+    const [events, existingResponses] = await Promise.all([
+        fetchEventsWithServices(90), // Default 90 days ahead
+        loadPollResponses(),
+    ]);
+
+    // Render the poll UI
+    renderPollUI(events, existingResponses, appContainer);
+} catch (error) {
+    console.error('Error initializing poll application:', error);
+    appContainer.innerHTML = `
+      <div style="display: flex; place-content: center; place-items: center; height: 100vh;">
+        <div style="text-align: center; color: #d32f2f;">
+          <h2>Fehler beim Laden</h2>
+          <p>Die Dienste konnten nicht geladen werden. Bitte versuchen Sie es später erneut.</p>
+        </div>
+      </div>
+    `;
+}
