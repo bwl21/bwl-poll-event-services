@@ -7,5 +7,8 @@ export default ({ mode }) => {
     return defineConfig({
         plugins: [vue()],
         base: `/ccm/${process.env.VITE_KEY}/`,
+        server: {
+            allowedHosts: true,
+        },
     });
 };
