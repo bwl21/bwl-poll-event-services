@@ -5,8 +5,11 @@
 export type PollResponse = 'yes' | 'maybe' | 'no' | null;
 
 export interface ServicePollEntry {
+    id?: number; // KV-Store ID
     eventId: number;
     serviceId: number;
+    userId: number;
+    userName?: string; // For display purposes
     response: PollResponse;
     comment: string;
     timestamp: string;
@@ -25,4 +28,21 @@ export interface ServiceInfo {
     name: string;
     serviceId: number;
     isValid?: boolean;
+    assignments?: ServiceAssignment[];
+}
+
+export interface ServiceAssignment {
+    personId: number;
+    personName: string;
+    isConfirmed: boolean; // true = confirmed, false = requested
+}
+
+export interface UserInfo {
+    id: number;
+    name: string;
+}
+
+export interface PollConfig {
+    startDate: string;
+    days: number;
 }

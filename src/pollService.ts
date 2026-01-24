@@ -3,7 +3,14 @@
  */
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import type { Event, Person, Service } from './utils/ct-types';
-import type { EventWithServices, ServicePollEntry, PollResponse } from './types';
+import type {
+    EventWithServices,
+    ServicePollEntry,
+    PollResponse,
+    UserInfo,
+    ServiceAssignment,
+    PollConfig,
+} from './types';
 import {
     getOrCreateModule,
     getCustomDataCategory,
@@ -15,18 +22,51 @@ import {
 
 const POLL_CATEGORY_SHORTY = 'poll-responses';
 
+let cachedUser: UserInfo | null = null;
+
+/**
+ * Get current user info
+ */
+export async function getCurrentUser(): Promise<UserInfo> {
+    if (cachedUser) return cachedUser;
+
+    const user = await churchtoolsClient.get<Person>('/whoami');
+    cachedUser = {
+        id: user.id!,
+        name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+    };
+    return cachedUser;
+}
+
+/**
+ * Parse URL parameters for poll configuration
+ */
+export function getPollConfig(): PollConfig {
+    const params = new URLSearchParams(window.location.search);
+    const startParam = params.get('start');
+    const daysParam = params.get('days');
+
+    const today = new Date().toISOString().split('T')[0];
+
+    return {
+        startDate: startParam || today,
+        days: daysParam ? parseInt(daysParam, 10) : 90,
+    };
+}
+
 /**
  * Fetch events within a given time range that have services to be filled
- * @param daysAhead Number of days to look ahead (default: 90)
- * @returns Array of events with their services
  */
-export async function fetchEventsWithServices(daysAhead: number = 90): Promise<EventWithServices[]> {
-    const now = new Date();
-    const futureDate = new Date();
-    futureDate.setDate(futureDate.getDate() + daysAhead);
+export async function fetchEventsWithServices(
+    startDate: string,
+    days: number
+): Promise<EventWithServices[]> {
+    const start = new Date(startDate);
+    const end = new Date(start);
+    end.setDate(end.getDate() + days);
 
-    const fromDate = now.toISOString().split('T')[0];
-    const toDate = futureDate.toISOString().split('T')[0];
+    const fromDate = start.toISOString().split('T')[0];
+    const toDate = end.toISOString().split('T')[0];
 
     try {
         // Fetch events with services included
@@ -35,8 +75,8 @@ export async function fetchEventsWithServices(daysAhead: number = 90): Promise<E
         );
 
         // Get current user to get their ID
-        const user = await churchtoolsClient.get<Person>('/whoami');
-        
+        const user = await getCurrentUser();
+
         // Get user's group memberships
         const userGroupMemberships = await churchtoolsClient.get<any[]>(
             `/persons/${user.id}/groupmemberships`
@@ -49,28 +89,50 @@ export async function fetchEventsWithServices(daysAhead: number = 90): Promise<E
 
         // Filter events that have services matching user's groups
         const eventsWithServices: EventWithServices[] = events
-            .filter(event => event.eventServices && event.eventServices.length > 0)
-            .map(event => {
+            .filter((event) => event.eventServices && event.eventServices.length > 0)
+            .map((event) => {
                 const services = (event.eventServices || [])
-                    .filter(eventService => {
+                    .filter((eventService) => {
                         // Find the service definition
-                        const service = allServices.find(s => s.id === eventService.serviceId);
+                        const service = allServices.find(
+                            (s) => s.id === eventService.serviceId
+                        );
                         if (!service) return false;
 
                         // Check if this service can be filled by user's groups
                         if (service.groupIds && service.groupIds.length > 0) {
-                            return service.groupIds.some(gid => userGroupIds.includes(gid));
+                            return service.groupIds.some((gid) =>
+                                userGroupIds.includes(gid)
+                            );
                         }
 
                         // If no group restriction, include it
                         return true;
                     })
-                    .map(eventService => ({
-                        id: eventService.id!,
-                        name: eventService.name || '',
-                        serviceId: eventService.serviceId!,
-                        isValid: eventService.isValid,
-                    }));
+                    .map((eventService) => {
+                        // Extract assignments from eventService
+                        const assignments: ServiceAssignment[] = [];
+                        if (eventService.person) {
+                            const person = eventService.person as any;
+                            const personName =
+                                person.domainAttributes?.firstName && person.domainAttributes?.lastName
+                                    ? `${person.domainAttributes.firstName} ${person.domainAttributes.lastName}`
+                                    : person.title || eventService.name || '';
+                            assignments.push({
+                                personId: person.domainId || 0,
+                                personName,
+                                isConfirmed: eventService.isValid === true,
+                            });
+                        }
+
+                        return {
+                            id: eventService.id!,
+                            name: eventService.name || '',
+                            serviceId: eventService.serviceId!,
+                            isValid: eventService.isValid,
+                            assignments,
+                        };
+                    });
 
                 return {
                     id: event.id!,
@@ -80,7 +142,7 @@ export async function fetchEventsWithServices(daysAhead: number = 90): Promise<E
                     services,
                 };
             })
-            .filter(event => event.services.length > 0);
+            .filter((event) => event.services.length > 0);
 
         return eventsWithServices;
     } catch (error) {
@@ -117,9 +179,9 @@ async function getPollCategory() {
 }
 
 /**
- * Load poll responses from kv-store
+ * Load all poll responses from kv-store (all users)
  */
-export async function loadPollResponses(): Promise<ServicePollEntry[]> {
+export async function loadAllPollResponses(): Promise<ServicePollEntry[]> {
     try {
         const category = await getPollCategory();
         if (!category) {
@@ -132,12 +194,24 @@ export async function loadPollResponses(): Promise<ServicePollEntry[]> {
             'Poll extension for ChurchTools event services'
         );
 
-        const values = await getCustomDataValues<ServicePollEntry>(category.id, module.id);
+        const values = await getCustomDataValues<ServicePollEntry>(
+            category.id,
+            module.id
+        );
         return values;
     } catch (error) {
         console.error('Error loading poll responses:', error);
         return [];
     }
+}
+
+/**
+ * Load poll responses for current user only
+ */
+export async function loadUserPollResponses(): Promise<ServicePollEntry[]> {
+    const user = await getCurrentUser();
+    const allResponses = await loadAllPollResponses();
+    return allResponses.filter((r) => r.userId === user.id);
 }
 
 /**
@@ -161,16 +235,25 @@ export async function savePollResponse(
             'Poll extension for ChurchTools event services'
         );
 
-        const values = await getCustomDataValues<ServicePollEntry>(category.id, module.id);
+        const user = await getCurrentUser();
+        const values = await getCustomDataValues<ServicePollEntry>(
+            category.id,
+            module.id
+        );
 
-        // Find existing response for this event/service combination
+        // Find existing response for this event/service/user combination
         const existing = values.find(
-            v => v.eventId === eventId && v.serviceId === serviceId
+            (v) =>
+                v.eventId === eventId &&
+                v.serviceId === serviceId &&
+                v.userId === user.id
         );
 
         const pollEntry: ServicePollEntry = {
             eventId,
             serviceId,
+            userId: user.id,
+            userName: user.name,
             response,
             comment,
             timestamp: new Date().toISOString(),
@@ -180,7 +263,7 @@ export async function savePollResponse(
             // Update existing response
             await updateCustomDataValue(
                 category.id,
-                existing.id,
+                existing.id!,
                 { value: JSON.stringify(pollEntry) },
                 module.id
             );
@@ -198,4 +281,27 @@ export async function savePollResponse(
         console.error('Error saving poll response:', error);
         throw error;
     }
+}
+
+/**
+ * Get responses grouped by service for display
+ */
+export function getResponsesForService(
+    allResponses: ServicePollEntry[],
+    eventId: number,
+    serviceId: number
+): {
+    yes: ServicePollEntry[];
+    maybe: ServicePollEntry[];
+    no: ServicePollEntry[];
+} {
+    const serviceResponses = allResponses.filter(
+        (r) => r.eventId === eventId && r.serviceId === serviceId
+    );
+
+    return {
+        yes: serviceResponses.filter((r) => r.response === 'yes'),
+        maybe: serviceResponses.filter((r) => r.response === 'maybe'),
+        no: serviceResponses.filter((r) => r.response === 'no'),
+    };
 }
