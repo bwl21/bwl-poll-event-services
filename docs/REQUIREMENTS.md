@@ -76,6 +76,10 @@ Alle Antworten werden im ChurchTools Key-Value-Store gespeichert:
 
 ### 4. Benutzeroberfläche
 
+#### Technologie:
+- Das UI wird mit Vue 3 und PrimeVue erstellt
+- PrimeVue liefert vorgefertigte UI-Komponenten (Buttons, Inputs, etc.)
+
 #### Design-Prinzipien:
 - Klare, übersichtliche Darstellung
 - Responsive Design
@@ -97,6 +101,29 @@ Alle Antworten werden im ChurchTools Key-Value-Store gespeichert:
 - Berechtigungsprüfung basierend auf Gruppenzugehörigkeit
 
 ## Technische Implementierung
+
+### Algorithmus zur Ermittlung relevanter Services
+
+Der Algorithmus bestimmt, welche Services dem Benutzer zur Umfrage angezeigt werden:
+
+1. **Daten abrufen:**
+   - Events im Zeitraum (Standard: nächste 90 Tage) mit `eventServices` laden
+   - Aktuellen Benutzer via `/whoami` ermitteln
+   - Gruppenmitgliedschaften des Benutzers laden
+   - Masterdata mit allen Service-Definitionen laden
+
+2. **Filterung der Services:**
+   - Für jeden Event-Service die zugehörige Service-Definition aus Masterdata suchen
+   - Prüfen, ob der Service Gruppen-Einschränkungen hat (`groupIds`)
+   - Falls ja: Service nur anzeigen, wenn der Benutzer Mitglied in mindestens einer dieser Gruppen ist
+   - Falls keine Gruppen-Einschränkung: Service anzeigen
+
+3. **Filterung der Events:**
+   - Events ohne relevante Services werden ausgeblendet
+   - Nur Events mit mindestens einem für den Benutzer relevanten Service werden angezeigt
+
+4. **Ergebnis:**
+   - Liste von Events mit den jeweils für den Benutzer relevanten Services
 
 ### Architektur
 Die Anwendung ist in mehrere Module aufgeteilt:
