@@ -85,10 +85,16 @@ onMounted(loadData);
     <div class="poll-app">
         <Toast />
         <header class="poll-header">
-            <h1>Dienste-Umfrage</h1>
+            <div class="header-title">
+                <h1>Dienste-Umfrage</h1>
+                <span class="version">v{{ APP_VERSION }}</span>
+            </div>
             <p class="subtitle">
-                Bitte geben Sie an, für welche Dienste Sie verfügbar sind.
+                Bitte trage ein, für welche Dienste du verfügbar bist.
             </p>
+          <p class="">
+            Es werden die Dienste angezeigt die durch eine deiner Gruppen besetzt werden können,
+          </p>
         </header>
 
         <div class="poll-controls">
@@ -154,7 +160,6 @@ onMounted(loadData);
         </div>
 
         <footer class="app-footer">
-            <span>Version {{ APP_VERSION }}</span>
         </footer>
     </div>
 </template>
@@ -172,14 +177,30 @@ onMounted(loadData);
     margin-bottom: 24px;
 }
 
+.header-title {
+    display: flex;
+    gap: 12px;
+    align-items: baseline;
+    margin-bottom: 8px;
+}
+
 .poll-header h1 {
     color: #333;
-    margin: 0 0 8px 0;
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 600;
+}
+
+.version {
+    font-size: 0.875rem;
+    color: #999;
+    font-weight: normal;
 }
 
 .subtitle {
     color: #666;
     margin: 0;
+    font-size: 0.95rem;
 }
 
 .poll-controls {

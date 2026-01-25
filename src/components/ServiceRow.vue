@@ -195,6 +195,7 @@ const allComments = computed(() => {
                 v-model="comment"
                 placeholder="Kommentar"
                 rows="1"
+                autoResize
                 class="comment-input"
                 @input="handleCommentInput"
             />
@@ -289,6 +290,7 @@ const allComments = computed(() => {
             v-model="comment"
             placeholder="Kommentar (optional)"
             rows="1"
+            autoResize
             class="comment-input mobile"
             @input="handleCommentInput"
         />
@@ -388,8 +390,7 @@ const allComments = computed(() => {
 .comment-input {
     width: 100%;
     font-size: 0.875rem;
-    resize: none;
-    overflow: hidden;
+    resize: vertical;
 }
 
 .status-msg {
