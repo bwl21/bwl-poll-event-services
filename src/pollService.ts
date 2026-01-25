@@ -144,6 +144,7 @@ export async function fetchEventsWithServices(
                             id: eventService.id!,
                             name: serviceName,
                             serviceId: eventService.serviceId!,
+                            sortKey: serviceDef?.sortKey,
                             isValid: eventService.isValid,
                             assignments,
                         };

@@ -50,7 +50,14 @@ const sortedServices = computed(() => {
     return [...props.event.services].sort((a, b) => {
         const sortA = a.sortKey ?? Number.MAX_SAFE_INTEGER;
         const sortB = b.sortKey ?? Number.MAX_SAFE_INTEGER;
-        return sortA - sortB;
+        
+        // Primary sort: by sortKey
+        if (sortA !== sortB) {
+            return sortA - sortB;
+        }
+        
+        // Secondary sort: alphabetically by name
+        return a.name.localeCompare(b.name, 'de');
     });
 });
 

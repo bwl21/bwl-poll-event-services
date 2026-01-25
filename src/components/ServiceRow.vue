@@ -55,7 +55,7 @@ const noResponses = computed(() =>
 
 const assignmentDisplay = computed(() => {
     if (!props.service.assignments || props.service.assignments.length === 0) {
-        return { text: 'Offen', severity: 'secondary' as const };
+        return { text: '', severity: 'secondary' as const };
     }
     const assignment = props.service.assignments[0];
     return {

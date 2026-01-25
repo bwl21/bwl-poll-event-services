@@ -8,6 +8,7 @@ interface ExportRow {
     'Event': string;
     'Datum': string;
     'Dienst': string;
+    'Besetzung': string;
     'Benutzer': string;
     'Antwort': string;
     'Kommentar': string;
@@ -64,6 +65,13 @@ export function exportToExcel(
     for (const event of events) {
         for (const service of event.services) {
             const serviceResponses = responseMap.get(`${event.id}-${service.id}`) || [];
+            
+            // Format assignment info
+            let assignmentText = '';
+            if ((service as any).assignments && (service as any).assignments.length > 0) {
+                const assignment = (service as any).assignments[0];
+                assignmentText = assignment.isConfirmed ? assignment.personName : `${assignment.personName} (angefordert)`;
+            }
 
             if (serviceResponses.length === 0) {
                 // Add row even if no responses
@@ -71,6 +79,7 @@ export function exportToExcel(
                     'Event': event.name,
                     'Datum': formatDate(event.startDate),
                     'Dienst': service.name,
+                    'Besetzung': assignmentText,
                     'Benutzer': '-',
                     'Antwort': '-',
                     'Kommentar': '',
@@ -82,6 +91,7 @@ export function exportToExcel(
                         'Event': event.name,
                         'Datum': formatDate(event.startDate),
                         'Dienst': service.name,
+                        'Besetzung': assignmentText,
                         'Benutzer': response.userName || `User ${response.userId}`,
                         'Antwort': formatResponse(response.response),
                         'Kommentar': response.comment || '',
@@ -92,8 +102,9 @@ export function exportToExcel(
         }
     }
 
-    // Create workbook and worksheet
-    const worksheet = XLSX.utils.json_to_sheet(rows);
+    // Create workbook and worksheet with column order
+    const columnOrder = ['Event', 'Datum', 'Dienst', 'Besetzung', 'Benutzer', 'Antwort', 'Kommentar', 'Zeitstempel'];
+    const worksheet = XLSX.utils.json_to_sheet(rows, { header: columnOrder });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Umfrage-Antworten');
 
@@ -102,6 +113,7 @@ export function exportToExcel(
         { wch: 25 }, // Event
         { wch: 20 }, // Datum
         { wch: 20 }, // Dienst
+        { wch: 25 }, // Besetzung
         { wch: 20 }, // Benutzer
         { wch: 12 }, // Antwort
         { wch: 30 }, // Kommentar
