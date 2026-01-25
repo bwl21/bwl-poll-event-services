@@ -181,13 +181,13 @@ const allComments = computed(() => {
                     v-tooltip.top="'Nein'"
                 />
                 <Button
-                    v-if="selectedResponse"
                     icon="pi pi-trash"
                     severity="danger"
                     text
                     outlined
                     @click="withdrawResponse"
                     :loading="saving"
+                    :disabled="!selectedResponse && !comment"
                     v-tooltip.top="'Antwort zurückziehen'"
                 />
             </div>
@@ -195,7 +195,6 @@ const allComments = computed(() => {
                 v-model="comment"
                 placeholder="Kommentar"
                 rows="1"
-                autoResize
                 class="comment-input"
                 @input="handleCommentInput"
             />
@@ -277,12 +276,11 @@ const allComments = computed(() => {
                 :loading="saving && selectedResponse === 'no'"
             />
             <Button
-                v-if="selectedResponse"
                 icon="pi pi-trash"
-                label="Zurückziehen"
                 severity="danger"
                 @click="withdrawResponse"
                 :loading="saving"
+                :disabled="!selectedResponse && !comment"
                 class="btn-withdraw"
             />
         </div>
@@ -290,8 +288,7 @@ const allComments = computed(() => {
         <Textarea
             v-model="comment"
             placeholder="Kommentar (optional)"
-            rows="2"
-            autoResize
+            rows="1"
             class="comment-input mobile"
             @input="handleCommentInput"
         />
@@ -330,7 +327,10 @@ const allComments = computed(() => {
 }
 
 .service-name {
-    min-width: 150px;
+    width: 110px;
+    min-width: 110px;
+    word-wrap: break-word;
+    word-break: break-word;
 }
 
 .button-group {
@@ -339,25 +339,57 @@ const allComments = computed(() => {
     margin-bottom: 8px;
 }
 
+.button-group .p-button {
+    flex: 1;
+}
+
+.btn-yes {
+    color: #4caf50;
+}
+
 .btn-yes.active {
     background-color: #4caf50 !important;
     border-color: #4caf50 !important;
+    color: #fff !important;
+}
+
+.btn-yes:hover {
+    background-color: rgba(76, 175, 80, 0.1) !important;
+}
+
+.btn-maybe {
+    color: #ff9800;
 }
 
 .btn-maybe.active {
     background-color: #ff9800 !important;
     border-color: #ff9800 !important;
+    color: #fff !important;
+}
+
+.btn-maybe:hover {
+    background-color: rgba(255, 152, 0, 0.1) !important;
+}
+
+.btn-no {
+    color: #f44336;
 }
 
 .btn-no.active {
     background-color: #f44336 !important;
     border-color: #f44336 !important;
+    color: #fff !important;
+}
+
+.btn-no:hover {
+    background-color: rgba(244, 67, 54, 0.1) !important;
 }
 
 .comment-input {
     width: 100%;
-    max-width: 200px;
     font-size: 0.875rem;
+    resize: none;
+    overflow: hidden;
 }
 
 .status-msg {
@@ -376,6 +408,8 @@ const allComments = computed(() => {
 
 .assignment {
     white-space: nowrap;
+    width: 150px;
+    min-width: 150px;
 }
 
 .other-responses {
@@ -438,6 +472,11 @@ const allComments = computed(() => {
 }
 
 .button-group.mobile .p-button {
+    flex: 1;
+    min-height: 44px;
+}
+
+.button-group.mobile .btn-withdraw {
     flex: 1;
     min-height: 44px;
 }
