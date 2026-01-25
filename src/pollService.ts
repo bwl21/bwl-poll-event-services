@@ -78,13 +78,13 @@ export async function fetchEventsWithServices(
         const user = await getCurrentUser();
 
         // Get user's group memberships
-        const userGroupMemberships = await churchtoolsClient.get<any[]>(
-            `/persons/${user.id}/groupmemberships`
+        const userGroups = await churchtoolsClient.get<any[]>(
+            `/persons/${user.id}/groups`
         );
-        const userGroupIds = userGroupMemberships.map((gm: any) => gm.groupId);
+        const userGroupIds = userGroups.map((g: any) => g.group?.id || g.id);
 
         // Get all services to check which groups they belong to
-        const masterData = await churchtoolsClient.get<any>('/events/masterdata');
+        const masterData = await churchtoolsClient.get<any>('/event/masterdata');
         const allServices: Service[] = masterData.services || [];
 
         // Filter events that have services matching user's groups
@@ -96,20 +96,31 @@ export async function fetchEventsWithServices(
                         // Find the service definition
                         const service = allServices.find(
                             (s) => s.id === eventService.serviceId
-                        );
+                        ) as any;
                         if (!service) return false;
 
                         // Check if this service can be filled by user's groups
                         if (service.groupIds && service.groupIds.length > 0) {
-                            return service.groupIds.some((gid) =>
+                            return service.groupIds.some((gid: number) =>
                                 userGroupIds.includes(gid)
                             );
                         }
 
-                        // If no group restriction, include it
-                        return true;
+                        // If onlyAssignFromGroups is true but no groupIds, user can't fill this
+                        if (service.onlyAssignFromGroups) {
+                            return false;
+                        }
+
+                        // No group restriction - don't show
+                        return false;
                     })
                     .map((eventService) => {
+                        // Get service name from masterdata
+                        const serviceDef = allServices.find(
+                            (s) => s.id === eventService.serviceId
+                        );
+                        const serviceName = serviceDef?.name || eventService.name || '';
+
                         // Extract assignments from eventService
                         const assignments: ServiceAssignment[] = [];
                         if (eventService.person) {
@@ -127,7 +138,7 @@ export async function fetchEventsWithServices(
 
                         return {
                             id: eventService.id!,
-                            name: eventService.name || '',
+                            name: serviceName,
                             serviceId: eventService.serviceId!,
                             isValid: eventService.isValid,
                             assignments,
