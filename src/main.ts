@@ -18,21 +18,13 @@ declare const window: Window &
         settings: {
             base_url?: string;
         };
-    };
-
-const baseUrl = window.settings?.base_url ?? import.meta.env.VITE_BASE_URL;
-churchtoolsClient.setBaseUrl(baseUrl);
-
-// Store baseUrl and extension key globally for components to access
-declare const window: Window &
-    typeof globalThis & {
-        settings: {
-            base_url?: string;
-        };
         CT_BASE_URL?: string;
         CT_EXTENSION_KEY?: string;
         CT_WINDOW_NAME?: string;
     };
+
+const baseUrl = window.settings?.base_url ?? import.meta.env.VITE_BASE_URL;
+churchtoolsClient.setBaseUrl(baseUrl);
 
 const extensionKey = import.meta.env.VITE_KEY || 'bwl-poll-event-services';
 const shortKey = extensionKey.split('-')[0]; // Get first part, e.g., 'bwl'
