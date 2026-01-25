@@ -72,6 +72,12 @@ async function handleResponse(response: PollResponse) {
     await saveResponse();
 }
 
+async function withdrawResponse() {
+    selectedResponse.value = null;
+    comment.value = '';
+    await saveResponse();
+}
+
 async function saveResponse() {
     saving.value = true;
     statusMessage.value = null;
@@ -174,6 +180,16 @@ const allComments = computed(() => {
                     :loading="saving && selectedResponse === 'no'"
                     v-tooltip.top="'Nein'"
                 />
+                <Button
+                    v-if="selectedResponse"
+                    icon="pi pi-trash"
+                    severity="danger"
+                    text
+                    outlined
+                    @click="withdrawResponse"
+                    :loading="saving"
+                    v-tooltip.top="'Antwort zurückziehen'"
+                />
             </div>
             <Textarea
                 v-model="comment"
@@ -259,6 +275,15 @@ const allComments = computed(() => {
                 class="btn-no"
                 @click="handleResponse('no')"
                 :loading="saving && selectedResponse === 'no'"
+            />
+            <Button
+                v-if="selectedResponse"
+                icon="pi pi-trash"
+                label="Zurückziehen"
+                severity="danger"
+                @click="withdrawResponse"
+                :loading="saving"
+                class="btn-withdraw"
             />
         </div>
 

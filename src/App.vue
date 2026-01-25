@@ -5,6 +5,7 @@ import InputNumber from 'primevue/inputnumber';
 import Button from 'primevue/button';
 import ProgressSpinner from 'primevue/progressspinner';
 import Message from 'primevue/message';
+import Toast from 'primevue/toast';
 
 import EventCard from './components/EventCard.vue';
 import {
@@ -82,6 +83,7 @@ onMounted(loadData);
 
 <template>
     <div class="poll-app">
+        <Toast />
         <header class="poll-header">
             <h1>Dienste-Umfrage</h1>
             <p class="subtitle">

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import Card from 'primevue/card';
+import Button from 'primevue/button';
 import ServiceRow from './ServiceRow.vue';
 import type {
     EventWithServices,
@@ -19,6 +20,14 @@ const emit = defineEmits<{
     (e: 'response-saved', entry: ServicePollEntry): void;
 }>();
 
+function openEventInChurchTools() {
+    // Get base URL and window name from globals set in main.ts
+    const baseUrl = (window as any).CT_BASE_URL;
+    const windowName = (window as any).CT_WINDOW_NAME;
+    const eventUrl = `${baseUrl}?q=churchservice&id=${props.event.id}#ListView`;
+    window.open(eventUrl, windowName);
+}
+
 const formattedDate = computed(() => {
     const date = new Date(props.event.startDate);
     return date.toLocaleDateString('de-DE', {
@@ -34,6 +43,14 @@ const formattedTime = computed(() => {
     return date.toLocaleTimeString('de-DE', {
         hour: '2-digit',
         minute: '2-digit',
+    });
+});
+
+const sortedServices = computed(() => {
+    return [...props.event.services].sort((a, b) => {
+        const sortA = a.sortKey ?? Number.MAX_SAFE_INTEGER;
+        const sortB = b.sortKey ?? Number.MAX_SAFE_INTEGER;
+        return sortA - sortB;
     });
 });
 
@@ -60,6 +77,15 @@ function getOtherResponsesForService(serviceId: number): ServicePollEntry[] {
                 <span class="event-date">{{ formattedDate }}</span>
                 <span class="event-name">{{ event.name }}</span>
                 <span class="event-time">{{ formattedTime }} Uhr</span>
+                <Button
+                    icon="pi pi-link"
+                    class="link-button"
+                    severity="secondary"
+                    text
+                    rounded
+                    @click="openEventInChurchTools"
+                    title="Event in ChurchTools öffnen"
+                />
             </div>
         </template>
         <template #content>
@@ -76,7 +102,7 @@ function getOtherResponsesForService(serviceId: number): ServicePollEntry[] {
                     </thead>
                     <tbody>
                         <ServiceRow
-                            v-for="service in event.services"
+                            v-for="service in sortedServices"
                             :key="service.id"
                             :event-id="event.id"
                             :service="service"
@@ -93,7 +119,7 @@ function getOtherResponsesForService(serviceId: number): ServicePollEntry[] {
             <!-- Mobile: Card layout -->
             <div class="mobile-view">
                 <ServiceRow
-                    v-for="service in event.services"
+                    v-for="service in sortedServices"
                     :key="service.id"
                     :event-id="event.id"
                     :service="service"
@@ -133,6 +159,15 @@ function getOtherResponsesForService(serviceId: number): ServicePollEntry[] {
 .event-time {
     color: #999;
     font-size: 0.9em;
+}
+
+.link-button {
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+}
+
+.link-button:hover {
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
 .services-table {
