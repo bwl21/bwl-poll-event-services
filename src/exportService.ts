@@ -1,5 +1,14 @@
 /**
  * Excel export functionality for poll responses
+ * 
+ * SECURITY NOTE: xlsx v0.18.5 has known vulnerabilities (Prototype Pollution, ReDoS).
+ * Risk is mitigated because:
+ * - Data comes from trusted ChurchTools API
+ * - Only used for export, not parsing uploads  
+ * - Client-side only processing
+ * 
+ * TODO: Update to xlsx 0.20.2+ when available on npm, or migrate to exceljs
+ * See: SECURITY.md for details
  */
 import * as XLSX from 'xlsx';
 import type { EventWithServices, ServicePollEntry } from './types';

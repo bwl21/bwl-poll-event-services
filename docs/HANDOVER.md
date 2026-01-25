@@ -33,9 +33,41 @@ Die PrimeIcons-Font wird nicht korrekt geladen. Icons funktionieren trotzdem (Fa
 
 ## Offene Punkte aus REQUIREMENTS.md
 
-- [ ] Anzeige bestehender Besetzungen (wer ist bereits eingetragen)
-- [ ] Anzeige von Antworten anderer Benutzer
-- [ ] Kommentare anderer Benutzer anzeigen
+- [x] Anzeige bestehender Besetzungen (wer ist bereits eingetragen) - **IMPLEMENTIERT** in `ServiceRow.vue`
+- [x] Anzeige von Antworten anderer Benutzer - **IMPLEMENTIERT** in `ServiceRow.vue`
+- [x] Kommentare anderer Benutzer anzeigen - **IMPLEMENTIERT** in `ServiceRow.vue`
+
+## Verbesserungsvorschläge
+
+### Sicherheit (KRITISCH - teilweise behoben)
+- [x] axios und vite Sicherheitslücken behoben (Update auf neueste Versionen)
+- [ ] xlsx hat bekannte Sicherheitslücken (Prototype Pollution, ReDoS) - keine gepatchte Version verfügbar
+  - Empfehlung: Alternative Bibliothek prüfen oder auf Updates warten
+
+### Code-Qualität (behoben)
+- [x] Debug console.log entfernt/geschützt
+- [x] Non-null Assertion Operator entfernt
+- [x] Memory Leak in Timer behoben (onUnmounted cleanup)
+- [x] Race Condition beim Speichern behoben
+- [x] Verbesserte Fehlermeldungen
+- [x] Environment Variable Validierung
+
+### Performance
+- [ ] Bundle-Größe: 861 KB (> 500 KB Warnung)
+  - Empfehlung: Code Splitting mit dynamic imports
+  - Empfehlung: PrimeVue Components lazy-loaden
+
+### Type Safety (dokumentiert, noch nicht behoben)
+- [ ] Verwendung von `any` types in pollService.ts ersetzen
+  - Zeilen 81, 91, 103, 131: Proper interfaces definieren
+
+### Testing
+- [ ] Unit Tests hinzufügen (derzeit keine Tests vorhanden)
+
+### Accessibility
+- [ ] ARIA Labels hinzufügen
+- [ ] Keyboard Navigation verbessern
+- [ ] Screen Reader Unterstützung
 
 ## Entwicklung
 
