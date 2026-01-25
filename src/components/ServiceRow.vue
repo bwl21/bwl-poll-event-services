@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onUnmounted } from 'vue';
 import Button from 'primevue/button';
 import Textarea from 'primevue/textarea';
 import Tag from 'primevue/tag';
@@ -109,6 +109,9 @@ async function saveResponse() {
 }
 
 function handleCommentInput() {
+    // Don't debounce if already saving
+    if (saving.value) return;
+    
     if (commentTimeout) {
         clearTimeout(commentTimeout);
     }
@@ -132,6 +135,13 @@ function getCommentsWithNames(responses: ServicePollEntry[]): { name: string; co
 
 const allComments = computed(() => {
     return getCommentsWithNames(props.otherResponses);
+});
+
+// Cleanup timer on component unmount
+onUnmounted(() => {
+    if (commentTimeout) {
+        clearTimeout(commentTimeout);
+    }
 });
 </script>
 

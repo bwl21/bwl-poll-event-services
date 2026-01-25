@@ -31,7 +31,7 @@ const days = ref(config.days);
 
 const userResponses = computed(() => {
     if (!currentUser.value) return [];
-    return allResponses.value.filter((r) => r.userId === currentUser.value!.id);
+    return allResponses.value.filter((r) => r.userId === currentUser.value.id);
 });
 
 async function loadData() {
@@ -51,8 +51,18 @@ async function loadData() {
         allResponses.value = responsesData;
     } catch (e) {
         console.error('Error loading data:', e);
-        error.value =
-            'Die Dienste konnten nicht geladen werden. Bitte versuchen Sie es später erneut.';
+        
+        // Provide more specific error messages
+        const err = e as Error;
+        if (err.message?.includes('401') || err.message?.includes('unauthorized')) {
+            error.value = 'Sie sind nicht angemeldet. Bitte melden Sie sich an und versuchen Sie es erneut.';
+        } else if (err.message?.includes('403') || err.message?.includes('forbidden')) {
+            error.value = 'Sie haben keine Berechtigung, auf diese Daten zuzugreifen.';
+        } else if (err.message?.includes('network') || err.message?.includes('fetch')) {
+            error.value = 'Netzwerkfehler. Bitte überprüfen Sie Ihre Internetverbindung.';
+        } else {
+            error.value = 'Die Dienste konnten nicht geladen werden. Bitte versuchen Sie es später erneut.';
+        }
     } finally {
         loading.value = false;
     }

@@ -19,6 +19,9 @@ declare const window: Window &
     };
 
 const baseUrl = window.settings?.base_url ?? import.meta.env.VITE_BASE_URL;
+if (!baseUrl) {
+    throw new Error('VITE_BASE_URL must be configured in environment variables or window.settings');
+}
 churchtoolsClient.setBaseUrl(baseUrl);
 
 const username = import.meta.env.VITE_USERNAME;
