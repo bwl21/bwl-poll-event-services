@@ -74,6 +74,38 @@ export async function fetchEventsWithServices(
             `/events?from=${fromDate}&to=${toDate}&include=eventServices`
         );
 
+        // Extract unique calendar IDs from events
+        const calendarIds = new Set<number>();
+        for (const event of events) {
+            const calendarId = (event as any).calendar?.domainIdentifier;
+            if (calendarId) {
+                calendarIds.add(parseInt(calendarId, 10));
+            }
+        }
+        console.log('Calendar IDs found:', Array.from(calendarIds));
+
+        // Fetch appointments with resource bookings for all calendars
+        const appointmentResources = new Map<number, any[]>();
+        if (calendarIds.size > 0) {
+            const calendarIdParams = Array.from(calendarIds)
+                .map((id) => `calendar_ids[]=${id}`)
+                .join('&');
+            const appointmentUrl = `/calendars/appointments?${calendarIdParams}&include[]=bookings`;
+            console.log('Fetching appointments:', appointmentUrl);
+            const appointments = await churchtoolsClient.get<any[]>(appointmentUrl);
+            console.log('Appointments received:', appointments.length);
+            
+            for (const apt of appointments) {
+                const appointmentId = apt.base?.id || apt.id;
+                const bookings = apt.base?.bookings || apt.bookings;
+                console.log('Appointment', appointmentId, 'structure:', apt);
+                if (appointmentId && bookings && bookings.length > 0) {
+                    console.log('Appointment', appointmentId, 'bookings:', bookings);
+                    appointmentResources.set(appointmentId, bookings);
+                }
+            }
+        }
+
         // Get current user to get their ID
         const user = await getCurrentUser();
 
@@ -150,11 +182,26 @@ export async function fetchEventsWithServices(
                         };
                     });
 
+                // Extract resources from appointments
+                let resources: any[] = [];
+                const appointmentId = (event as any).appointmentId || (event as any).appointment?.id;
+                console.log('Event', event.id, 'appointmentId:', appointmentId);
+                if (appointmentId) {
+                    const bookings = appointmentResources.get(appointmentId);
+                    console.log('Bookings for appointment', appointmentId, ':', bookings);
+                    if (bookings && bookings.length > 0) {
+                        resources = bookings.map((b: any) => ({
+                            name: b.base?.resource?.name || b.resource?.name || b.name || '',
+                        })).filter((r) => r.name);
+                    }
+                }
+
                 return {
                     id: event.id!,
                     name: event.name || '',
                     startDate: event.startDate || '',
                     endDate: event.endDate,
+                    resources: resources.length > 0 ? resources : undefined,
                     services,
                 };
             })

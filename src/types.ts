@@ -15,11 +15,16 @@ export interface ServicePollEntry {
     timestamp: string;
 }
 
+export interface EventResource {
+    name: string;
+}
+
 export interface EventWithServices {
     id: number;
     name: string;
     startDate: string;
     endDate?: string;
+    resources?: EventResource[];
     services: ServiceInfo[];
 }
 

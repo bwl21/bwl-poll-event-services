@@ -46,6 +46,14 @@ const formattedTime = computed(() => {
     });
 });
 
+const resourceNames = computed(() => {
+    if (!props.event.resources || props.event.resources.length === 0) {
+        return '';
+    }
+    console.log('Resources for event', props.event.id, ':', props.event.resources);
+    return props.event.resources.map((r) => r.name).join(', ');
+});
+
 const sortedServices = computed(() => {
     return [...props.event.services].sort((a, b) => {
         const sortA = a.sortKey ?? Number.MAX_SAFE_INTEGER;
@@ -80,19 +88,24 @@ function getOtherResponsesForService(serviceId: number): ServicePollEntry[] {
 <template>
     <Card class="event-card">
         <template #title>
-            <div class="event-header">
-                <span class="event-date">{{ formattedDate }}</span>
-                <span class="event-name">{{ event.name }}</span>
-                <span class="event-time">{{ formattedTime }} Uhr</span>
-                <Button
-                    icon="pi pi-link"
-                    class="link-button"
-                    severity="secondary"
-                    text
-                    rounded
-                    @click="openEventInChurchTools"
-                    title="Event in ChurchTools öffnen"
-                />
+            <div>
+                <div class="event-header">
+                    <span class="event-date">{{ formattedDate }}</span>
+                    <span class="event-name">{{ event.name }}</span>
+                    <span class="event-time">{{ formattedTime }} Uhr</span>
+                    <Button
+                        icon="pi pi-link"
+                        class="link-button"
+                        severity="secondary"
+                        text
+                        rounded
+                        @click="openEventInChurchTools"
+                        title="Event in ChurchTools öffnen"
+                    />
+                </div>
+                <div v-if="event.resources && event.resources.length > 0" class="event-resources">
+                    {{ resourceNames }}
+                </div>
             </div>
         </template>
         <template #content>
@@ -166,6 +179,12 @@ function getOtherResponsesForService(serviceId: number): ServicePollEntry[] {
 .event-time {
     color: #999;
     font-size: 0.9em;
+}
+
+.event-resources {
+    color: #999;
+    font-size: 0.85em;
+    margin-top: 2px;
 }
 
 .link-button {
