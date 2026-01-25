@@ -81,7 +81,11 @@ export async function fetchEventsWithServices(
         const userGroups = await churchtoolsClient.get<any[]>(
             `/persons/${user.id}/groups`
         );
-        const userGroupIds = userGroups.map((g: any) => g.group?.id || g.id);
+        const userGroupIds = userGroups.map((g: any) => {
+            const groupId = g.group?.domainIdentifier;
+            return groupId ? parseInt(groupId, 10) : null;
+        }).filter((id): id is number => id !== null);
+        console.log('x User:', user.id, user.name, 'Groups:', userGroupIds);
 
         // Get all services to check which groups they belong to
         const masterData = await churchtoolsClient.get<any>('/event/masterdata');

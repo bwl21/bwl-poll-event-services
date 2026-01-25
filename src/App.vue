@@ -16,6 +16,8 @@ import {
 import { exportToExcel } from './exportService';
 import type { EventWithServices, ServicePollEntry, UserInfo } from './types';
 
+const APP_VERSION = __APP_VERSION__;
+
 const loading = ref(true);
 const error = ref<string | null>(null);
 const events = ref<EventWithServices[]>([]);
@@ -148,6 +150,10 @@ onMounted(loadData);
                 @response-saved="handleResponseSaved"
             />
         </div>
+
+        <footer class="app-footer">
+            <span>Version {{ APP_VERSION }}</span>
+        </footer>
     </div>
 </template>
 
@@ -236,5 +242,14 @@ onMounted(loadData);
         margin-left: 0;
         margin-top: 8px;
     }
+}
+
+.app-footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #999;
 }
 </style>
