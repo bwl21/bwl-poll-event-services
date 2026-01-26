@@ -136,7 +136,7 @@ async function handleDelete() {
                     <span v-if="serviceMap.has(data.serviceId)" class="service-info">
                         <strong>{{ serviceMap.get(data.serviceId)?.categoryName }}</strong>: {{ serviceMap.get(data.serviceId)?.name }}
                     </span>
-                    <span v-else class="text-muted">Service {{ data.serviceId }}</span>
+                    <span v-else class="text-muted">-</span>
                 </template>
             </Column>
             <Column field="userName" header="Benutzer" sortable style="min-width: 150px">
