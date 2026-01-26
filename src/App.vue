@@ -36,6 +36,7 @@ const events = ref<EventWithServices[]>([]);
 const allResponses = ref<ServicePollEntry[]>([]);
 const currentUser = ref<UserInfo | null>(null);
 const userIsAdmin = ref(false);
+const adminModeEnabled = ref(localStorage.getItem('admin-mode') !== 'off');
 
 // Config from URL params or defaults
 const config = getPollConfig();
@@ -46,6 +47,14 @@ const userResponses = computed(() => {
     if (!currentUser.value) return [];
     return allResponses.value.filter((r) => r.userId === currentUser.value!.id);
 });
+
+const showAdminPanel = computed(() => userIsAdmin.value && adminModeEnabled.value);
+
+function toggleAdminMode() {
+    adminModeEnabled.value = !adminModeEnabled.value;
+    localStorage.setItem('admin-mode', adminModeEnabled.value ? 'on' : 'off');
+    debugLog('Admin mode toggled:', adminModeEnabled.value);
+}
 
 async function loadData() {
     loading.value = true;
@@ -116,7 +125,18 @@ onMounted(loadData);
             <div class="header-title">
                 <h1>Dienste-Umfrage</h1>
                 <span class="version">v{{ APP_VERSION }}</span>
-                <span v-if="userIsAdmin" class="admin-badge">Admin</span>
+                <span v-if="userIsAdmin" class="admin-badge">
+                    Admin
+                    <Button 
+                        :icon="adminModeEnabled ? 'pi pi-eye' : 'pi pi-eye-slash'"
+                        :title="adminModeEnabled ? 'Admin-Modus aktiviert' : 'Admin-Modus deaktiviert'"
+                        text
+                        severity="secondary"
+                        size="small"
+                        @click="toggleAdminMode"
+                        style="margin-left: 8px;"
+                    />
+                </span>
             </div>
             <p class="subtitle">
                 Bitte trage ein, für welche Dienste du verfügbar bist.
@@ -196,9 +216,9 @@ onMounted(loadData);
             />
         </div>
 
-        <!-- Admin Panel - only visible to admins -->
+        <!-- Admin Panel - only visible to admins with admin mode enabled -->
         <AdminPanel
-            v-if="userIsAdmin && !loading"
+            v-if="showAdminPanel && !loading"
             :responses="allResponses"
             :events="events"
             @response-deleted="handleResponseDeleted"
