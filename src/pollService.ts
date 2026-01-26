@@ -392,33 +392,26 @@ let cachedIsAdmin: boolean | null = null;
 
 /**
  * Check if current user has "Poll Admin" permission
- * A user is an admin if they have read access to the "poll-admin" KV-Store category
+ * A user is an admin if they have read access to the "admin-config" KV-Store category
  * This allows admins to be managed through ChurchTools permission system
  */
 export async function isUserAdmin(): Promise<boolean> {
     if (cachedIsAdmin !== null) return cachedIsAdmin;
 
     try {
-        const module = await getOrCreateModule(
-            import.meta.env.VITE_KEY || 'bwl-poll-event-services',
-            'Event Service Poll',
-            'Poll extension for ChurchTools event services'
-        );
-
-        // Try to get the poll-admin category
-        // If user has no read permission, this will fail with 403
-        const adminCategory = await getCustomDataCategory<any>(ADMIN_CONFIG_CATEGORY_SHORTY);
+        // This will create the admin-config category if it doesn't exist
+        const adminCategory = await getAdminConfigCategory();
         
         // If category exists and we can read it, user is admin
         const isAdmin = adminCategory !== undefined && adminCategory !== null;
-        debugLog('Admin check for user: has access to poll-admin category =', isAdmin);
+        debugLog('Admin check for user: has access to admin-config category =', isAdmin);
         
         cachedIsAdmin = isAdmin;
         return isAdmin;
     } catch (error: any) {
         // If we get a 403 Forbidden, user has no access = not admin
         if (error?.response?.status === 403 || error?.message?.includes('403')) {
-            debugLog('User has no permission to access poll-admin category');
+            debugLog('User has no permission to access admin-config category');
             cachedIsAdmin = false;
             return false;
         }
