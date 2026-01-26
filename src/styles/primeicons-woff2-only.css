@@ -1,0 +1,19 @@
+/* PrimeIcons font with only woff2 format (excludes SVG fallback to save ~300KB) */
+@font-face {
+    font-family: 'primeicons';
+    src: url('../../node_modules/primeicons/fonts/primeicons.woff2?v=6.0.0') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+.pi {
+    font-family: 'primeicons' !important;
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    display: inline-block;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
