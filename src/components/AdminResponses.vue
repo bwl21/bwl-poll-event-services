@@ -5,7 +5,7 @@ import Column from 'primevue/column';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import { useToast } from 'primevue/usetoast';
-import type { ServicePollEntry } from '../types';
+import type { ServicePollEntry, EventWithServices } from '../types';
 import { deleteResponse } from '../pollService';
 
 // Debug logging controlled by ?debug URL parameter
@@ -19,7 +19,20 @@ function debugLog(...args: any[]): void {
 
 const props = defineProps<{
     responses: ServicePollEntry[];
+    events: EventWithServices[];
 }>();
+
+// Build lookup maps for quick access
+const eventMap = new Map(props.events.map(e => [e.id, e]));
+const serviceMap = new Map<number, { name: string; categoryName: string }>();
+for (const event of props.events) {
+    for (const service of event.services) {
+        serviceMap.set(service.serviceId, {
+            name: service.name,
+            categoryName: event.name,
+        });
+    }
+}
 
 const emit = defineEmits<{
     (e: 'response-deleted', entry: ServicePollEntry): void;
@@ -110,8 +123,22 @@ async function handleDelete() {
             stripedRows
             class="p-datatable-sm"
         >
-            <Column field="eventId" header="Event ID" sortable style="width: 100px" />
-            <Column field="serviceId" header="Service ID" sortable style="width: 100px" />
+            <Column field="eventId" header="Event" sortable style="min-width: 200px">
+                <template #body="{ data }">
+                    <span v-if="eventMap.has(data.eventId)" class="event-info">
+                        {{ eventMap.get(data.eventId)?.name }}
+                    </span>
+                    <span v-else class="text-muted">Event {{ data.eventId }}</span>
+                </template>
+            </Column>
+            <Column field="serviceId" header="Service" sortable style="min-width: 250px">
+                <template #body="{ data }">
+                    <span v-if="serviceMap.has(data.serviceId)" class="service-info">
+                        <strong>{{ serviceMap.get(data.serviceId)?.categoryName }}</strong>: {{ serviceMap.get(data.serviceId)?.name }}
+                    </span>
+                    <span v-else class="text-muted">Service {{ data.serviceId }}</span>
+                </template>
+            </Column>
             <Column field="userName" header="Benutzer" sortable style="min-width: 150px">
                 <template #body="{ data }">
                     {{ data.userName || `User ${data.userId}` }}
@@ -222,5 +249,26 @@ async function handleDelete() {
 
 .confirmation-content p {
     margin: 0;
+}
+
+.event-info {
+    display: block;
+    font-weight: 500;
+}
+
+.service-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.service-info strong {
+    font-weight: 600;
+    color: #333;
+}
+
+.text-muted {
+    color: #999;
+    font-style: italic;
 }
 </style>

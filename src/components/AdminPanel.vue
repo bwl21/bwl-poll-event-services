@@ -56,6 +56,7 @@ function handleExportAll() {
                 </template>
                 <AdminResponses
                     :responses="responses"
+                    :events="events"
                     @response-deleted="handleResponseDeleted"
                 />
             </TabPanel>
