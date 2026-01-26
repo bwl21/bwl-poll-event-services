@@ -33,6 +33,8 @@ for (const event of props.events) {
         });
     }
 }
+debugLog('Service map:', serviceMap);
+debugLog('First response service IDs:', props.responses.slice(0, 3).map(r => r.serviceId));
 
 const emit = defineEmits<{
     (e: 'response-deleted', entry: ServicePollEntry): void;
