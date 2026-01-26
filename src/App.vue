@@ -8,11 +8,13 @@ import Message from 'primevue/message';
 import Toast from 'primevue/toast';
 
 import EventCard from './components/EventCard.vue';
+import AdminPanel from './components/AdminPanel.vue';
 import {
     fetchEventsWithServices,
     loadAllPollResponses,
     getCurrentUser,
     getPollConfig,
+    isUserAdmin,
 } from './pollService';
 import { exportToExcel } from './exportService';
 import type { EventWithServices, ServicePollEntry, UserInfo } from './types';
@@ -33,6 +35,7 @@ const error = ref<string | null>(null);
 const events = ref<EventWithServices[]>([]);
 const allResponses = ref<ServicePollEntry[]>([]);
 const currentUser = ref<UserInfo | null>(null);
+const userIsAdmin = ref(false);
 
 // Config from URL params or defaults
 const config = getPollConfig();
@@ -52,13 +55,16 @@ async function loadData() {
         currentUser.value = await getCurrentUser();
 
         const startStr = startDate.value.toISOString().split('T')[0];
-        const [eventsData, responsesData] = await Promise.all([
+        const [eventsData, responsesData, adminStatus] = await Promise.all([
             fetchEventsWithServices(startStr, days.value),
             loadAllPollResponses(),
+            isUserAdmin(),
         ]);
 
         events.value = eventsData;
         allResponses.value = responsesData;
+        userIsAdmin.value = adminStatus;
+        debugLog('User is admin:', adminStatus);
     } catch (e) {
         debugLog('Error loading data:', e);
         error.value =
@@ -85,6 +91,19 @@ function handleResponseSaved(entry: ServicePollEntry) {
 
 function handleExport() {
     exportToExcel(events.value, allResponses.value);
+}
+
+function handleResponseDeleted(entry: ServicePollEntry) {
+    // Remove deleted response from local state
+    const idx = allResponses.value.findIndex(
+        (r) =>
+            r.eventId === entry.eventId &&
+            r.serviceId === entry.serviceId &&
+            r.userId === entry.userId
+    );
+    if (idx >= 0) {
+        allResponses.value.splice(idx, 1);
+    }
 }
 
 onMounted(loadData);
@@ -167,6 +186,14 @@ onMounted(loadData);
                 @response-saved="handleResponseSaved"
             />
         </div>
+
+        <!-- Admin Panel - only visible to admins -->
+        <AdminPanel
+            v-if="userIsAdmin && !loading"
+            :responses="allResponses"
+            :events="events"
+            @response-deleted="handleResponseDeleted"
+        />
 
         <footer class="app-footer">
         </footer>

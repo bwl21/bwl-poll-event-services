@@ -10,6 +10,7 @@ import type {
     UserInfo,
     ServiceAssignment,
     PollConfig,
+    AdminServiceConfig,
 } from './types';
 import {
     getOrCreateModule,
@@ -18,9 +19,12 @@ import {
     getCustomDataValues,
     createCustomDataValue,
     updateCustomDataValue,
+    deleteCustomDataValue,
 } from './utils/kv-store';
 
 const POLL_CATEGORY_SHORTY = 'poll-responses';
+const ADMIN_CONFIG_CATEGORY_SHORTY = 'admin-config';
+const POLL_ADMIN_PERMISSION = 'Poll Admin';
 
 // Debug logging controlled by ?debug URL parameter
 const DEBUG = new URLSearchParams(window.location.search).has('debug');
@@ -376,4 +380,235 @@ export function getResponsesForService(
         maybe: serviceResponses.filter((r) => r.response === 'maybe'),
         no: serviceResponses.filter((r) => r.response === 'no'),
     };
+}
+
+/**
+ * ────────────────────────────────────────────────
+ *  ADMIN FUNCTIONS
+ * ────────────────────────────────────────────────
+ */
+
+let cachedIsAdmin: boolean | null = null;
+
+/**
+ * Check if current user has "Poll Admin" permission via KV-Store category
+ * Uses a separate category to store admin permissions
+ */
+export async function isUserAdmin(): Promise<boolean> {
+    if (cachedIsAdmin !== null) return cachedIsAdmin;
+
+    try {
+        const module = await getOrCreateModule(
+            import.meta.env.VITE_KEY || 'bwl-poll-event-services',
+            'Event Service Poll',
+            'Poll extension for ChurchTools event services'
+        );
+
+        // Check if admin-config category exists and has permission entry for user
+        let category = await getCustomDataCategory(ADMIN_CONFIG_CATEGORY_SHORTY);
+        if (!category) {
+            // No admin config category = no admins defined
+            debugLog('No admin-config category found, user is not admin');
+            cachedIsAdmin = false;
+            return false;
+        }
+
+        const user = await getCurrentUser();
+        const values = await getCustomDataValues<{ type: string; userId?: number; permission?: string }>(
+            category.id,
+            module.id
+        );
+
+        // Look for a permission entry for this user with "Poll Admin" permission
+        const hasAdminPermission = values.some(
+            (v) => v.type === 'permission' && v.userId === user.id && v.permission === POLL_ADMIN_PERMISSION
+        );
+
+        debugLog('Admin check for user', user.id, ':', hasAdminPermission);
+        cachedIsAdmin = hasAdminPermission;
+        return hasAdminPermission;
+    } catch (error) {
+        console.error('Error checking admin status:', error);
+        cachedIsAdmin = false;
+        return false;
+    }
+}
+
+/**
+ * Get or create the admin config category in kv-store
+ */
+async function getAdminConfigCategory() {
+    const module = await getOrCreateModule(
+        import.meta.env.VITE_KEY || 'bwl-poll-event-services',
+        'Event Service Poll',
+        'Poll extension for ChurchTools event services'
+    );
+
+    let category = await getCustomDataCategory(ADMIN_CONFIG_CATEGORY_SHORTY);
+    if (!category) {
+        await createCustomDataCategory(
+            {
+                customModuleId: module.id,
+                name: 'Admin Config',
+                shorty: ADMIN_CONFIG_CATEGORY_SHORTY,
+                description: 'Admin configuration and service visibility settings',
+            },
+            module.id
+        );
+        category = await getCustomDataCategory(ADMIN_CONFIG_CATEGORY_SHORTY);
+    }
+
+    return category;
+}
+
+/**
+ * Get all service configurations (visibility settings)
+ */
+export async function getServiceConfigs(): Promise<AdminServiceConfig[]> {
+    try {
+        const category = await getAdminConfigCategory();
+        if (!category) {
+            return [];
+        }
+
+        const module = await getOrCreateModule(
+            import.meta.env.VITE_KEY || 'bwl-poll-event-services',
+            'Event Service Poll',
+            'Poll extension for ChurchTools event services'
+        );
+
+        const values = await getCustomDataValues<AdminServiceConfig & { type?: string }>(
+            category.id,
+            module.id
+        );
+
+        // Filter only service config entries (not permission entries)
+        return values.filter((v) => v.type === 'service-config' || v.serviceId !== undefined);
+    } catch (error) {
+        console.error('Error loading service configs:', error);
+        return [];
+    }
+}
+
+/**
+ * Update service configuration (visibility settings)
+ */
+export async function updateServiceConfig(
+    serviceId: number,
+    votesVisible: boolean,
+    serviceName?: string
+): Promise<void> {
+    try {
+        const category = await getAdminConfigCategory();
+        if (!category) {
+            throw new Error('Could not create admin config category');
+        }
+
+        const module = await getOrCreateModule(
+            import.meta.env.VITE_KEY || 'bwl-poll-event-services',
+            'Event Service Poll',
+            'Poll extension for ChurchTools event services'
+        );
+
+        const values = await getCustomDataValues<AdminServiceConfig & { type?: string }>(
+            category.id,
+            module.id
+        );
+
+        // Find existing config for this service
+        const existing = values.find((v) => v.serviceId === serviceId);
+
+        const configEntry = {
+            type: 'service-config',
+            serviceId,
+            serviceName,
+            votesVisible,
+        };
+
+        if (existing && existing.id) {
+            await updateCustomDataValue(
+                category.id,
+                existing.id,
+                { value: JSON.stringify(configEntry) },
+                module.id
+            );
+            debugLog('Updated service config for service', serviceId);
+        } else {
+            await createCustomDataValue(
+                {
+                    dataCategoryId: category.id,
+                    value: JSON.stringify(configEntry),
+                },
+                module.id
+            );
+            debugLog('Created service config for service', serviceId);
+        }
+    } catch (error) {
+        console.error('Error updating service config:', error);
+        throw error;
+    }
+}
+
+/**
+ * Delete a poll response (admin function)
+ */
+export async function deleteResponse(
+    eventId: number,
+    serviceId: number,
+    userId: number
+): Promise<void> {
+    try {
+        const category = await getPollCategory();
+        if (!category) {
+            throw new Error('Poll category not found');
+        }
+
+        const module = await getOrCreateModule(
+            import.meta.env.VITE_KEY || 'bwl-poll-event-services',
+            'Event Service Poll',
+            'Poll extension for ChurchTools event services'
+        );
+
+        const values = await getCustomDataValues<ServicePollEntry>(
+            category.id,
+            module.id
+        );
+
+        // Find the response to delete
+        const response = values.find(
+            (v) =>
+                v.eventId === eventId &&
+                v.serviceId === serviceId &&
+                v.userId === userId
+        );
+
+        if (!response || !response.id) {
+            throw new Error('Response not found');
+        }
+
+        await deleteCustomDataValue(category.id, response.id, module.id);
+        debugLog('Deleted response for event', eventId, 'service', serviceId, 'user', userId);
+    } catch (error) {
+        console.error('Error deleting response:', error);
+        throw error;
+    }
+}
+
+/**
+ * Get all unique services from all responses (for admin config)
+ */
+export async function getAllServicesFromResponses(): Promise<{ serviceId: number; serviceName: string }[]> {
+    const responses = await loadAllPollResponses();
+    const serviceMap = new Map<number, string>();
+
+    for (const response of responses) {
+        if (!serviceMap.has(response.serviceId)) {
+            serviceMap.set(response.serviceId, `Service ${response.serviceId}`);
+        }
+    }
+
+    return Array.from(serviceMap.entries()).map(([serviceId, serviceName]) => ({
+        serviceId,
+        serviceName,
+    }));
 }

@@ -52,3 +52,13 @@ export interface PollConfig {
     startDate: string;
     days: number;
 }
+
+/**
+ * Admin Service Configuration
+ */
+export interface AdminServiceConfig {
+    id?: number; // KV-Store ID
+    serviceId: number;
+    serviceName?: string;
+    votesVisible: boolean;
+}
