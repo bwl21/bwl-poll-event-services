@@ -3,8 +3,8 @@ import PrimeVue from 'primevue/config';
 import ToastService from 'primevue/toastservice';
 import Tooltip from 'primevue/tooltip';
 import Aura from '@primeuix/themes/aura';
-// Load only woff2 web font, exclude SVG to save ~300KB
-import './styles/primeicons-woff2-only.css';
+// Load primeicons CSS (includes all font formats)
+import 'primeicons/primeicons.css';
 
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import App from './App.vue';
