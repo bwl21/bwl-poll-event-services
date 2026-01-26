@@ -94,7 +94,7 @@ async function saveResponse() {
     try {
         await savePollResponse(
             props.eventId,
-            props.service.id,
+            props.service.serviceId,
             selectedResponse.value,
             comment.value
         );
