@@ -90,7 +90,7 @@ export async function fetchEventsWithServices(
             const calendarIdParams = Array.from(calendarIds)
                 .map((id) => `calendar_ids[]=${id}`)
                 .join('&');
-            const appointmentUrl = `/calendars/appointments?${calendarIdParams}&include[]=bookings`;
+            const appointmentUrl = `/calendars/appointments?${calendarIdParams}&from=${fromDate}&to=${toDate}&include[]=bookings`;
             console.log('Fetching appointments:', appointmentUrl);
             const appointments = await churchtoolsClient.get<any[]>(appointmentUrl);
             console.log('Appointments received:', appointments.length);
