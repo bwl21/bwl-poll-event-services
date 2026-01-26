@@ -49,7 +49,7 @@ function handleExportAll() {
         </div>
 
         <TabView v-model:activeIndex="activeTab">
-            <TabPanel header="Responses">
+            <TabPanel>
                 <template #header>
                     <i class="pi pi-list mr-2"></i>
                     <span>Responses</span>
@@ -60,7 +60,7 @@ function handleExportAll() {
                 />
             </TabPanel>
 
-            <TabPanel header="Service Config">
+            <TabPanel>
                 <template #header>
                     <i class="pi pi-sliders-h mr-2"></i>
                     <span>Service Config</span>
@@ -68,7 +68,7 @@ function handleExportAll() {
                 <AdminConfig :events="events" />
             </TabPanel>
 
-            <TabPanel header="Export">
+            <TabPanel>
                 <template #header>
                     <i class="pi pi-file-excel mr-2"></i>
                     <span>Export</span>

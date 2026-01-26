@@ -6,6 +6,8 @@ import Button from 'primevue/button';
 import ProgressSpinner from 'primevue/progressspinner';
 import Message from 'primevue/message';
 import Toast from 'primevue/toast';
+import TabView from 'primevue/tabview';
+import TabPanel from 'primevue/tabpanel';
 
 import EventCard from './components/EventCard.vue';
 import AdminPanel from './components/AdminPanel.vue';
@@ -36,7 +38,7 @@ const events = ref<EventWithServices[]>([]);
 const allResponses = ref<ServicePollEntry[]>([]);
 const currentUser = ref<UserInfo | null>(null);
 const userIsAdmin = ref(false);
-const adminModeEnabled = ref(localStorage.getItem('admin-mode') !== 'off');
+const activeTab = ref(0);
 
 // Config from URL params or defaults
 const config = getPollConfig();
@@ -47,14 +49,6 @@ const userResponses = computed(() => {
     if (!currentUser.value) return [];
     return allResponses.value.filter((r) => r.userId === currentUser.value!.id);
 });
-
-const showAdminPanel = computed(() => userIsAdmin.value && adminModeEnabled.value);
-
-function toggleAdminMode() {
-    adminModeEnabled.value = !adminModeEnabled.value;
-    localStorage.setItem('admin-mode', adminModeEnabled.value ? 'on' : 'off');
-    debugLog('Admin mode toggled:', adminModeEnabled.value);
-}
 
 async function loadData() {
     loading.value = true;
@@ -125,25 +119,8 @@ onMounted(loadData);
             <div class="header-title">
                 <h1>Dienste-Umfrage</h1>
                 <span class="version">v{{ APP_VERSION }}</span>
-                <span v-if="userIsAdmin" class="admin-badge">
-                    Admin
-                    <Button 
-                        :icon="adminModeEnabled ? 'pi pi-eye' : 'pi pi-eye-slash'"
-                        :title="adminModeEnabled ? 'Admin-Modus aktiviert' : 'Admin-Modus deaktiviert'"
-                        text
-                        severity="secondary"
-                        size="small"
-                        @click="toggleAdminMode"
-                        style="margin-left: 8px;"
-                    />
-                </span>
+                <span v-if="userIsAdmin" class="admin-badge">Admin</span>
             </div>
-            <p class="subtitle">
-                Bitte trage ein, für welche Dienste du verfügbar bist.
-            </p>
-          <p class="">
-            Es werden die Dienste angezeigt die durch eine deiner Gruppen besetzt werden können,
-          </p>
           <!-- Debug info when ?debug is in URL -->
           <div v-if="DEBUG" class="debug-info">
               <strong>Debug:</strong>
@@ -154,75 +131,97 @@ onMounted(loadData);
           </div>
         </header>
 
-        <div class="poll-controls">
-            <div class="control-group">
-                <label for="startDate">Startdatum</label>
-                <DatePicker
-                    id="startDate"
-                    v-model="startDate"
-                    dateFormat="dd.mm.yy"
-                    showIcon
-                    @date-select="loadData"
+        <TabView v-model:activeIndex="activeTab">
+            <TabPanel>
+                <template #header>
+                    <i class="pi pi-list mr-2"></i>
+                    <span>Umfrage</span>
+                </template>
+                
+                <p class="subtitle">
+                    Bitte trage ein, für welche Dienste du verfügbar bist.
+                </p>
+                <p class="info-text">
+                    Es werden die Dienste angezeigt die durch eine deiner Gruppen besetzt werden können.
+                </p>
+
+                <div class="poll-controls">
+                    <div class="control-group">
+                        <label for="startDate">Startdatum</label>
+                        <DatePicker
+                            id="startDate"
+                            v-model="startDate"
+                            dateFormat="dd.mm.yy"
+                            showIcon
+                            @date-select="loadData"
+                        />
+                    </div>
+                    <div class="control-group">
+                        <label for="days">Anzahl Tage</label>
+                        <InputNumber
+                            id="days"
+                            v-model="days"
+                            :min="1"
+                            :max="365"
+                            showButtons
+                            @update:modelValue="loadData"
+                        />
+                    </div>
+                    <div class="control-group export-btn">
+                        <Button
+                            label="Excel Export"
+                            icon="pi pi-file-excel"
+                            severity="success"
+                            @click="handleExport"
+                            :disabled="events.length === 0"
+                        />
+                    </div>
+                </div>
+
+                <div v-if="loading" class="loading-container">
+                    <ProgressSpinner />
+                    <p>Dienste werden geladen...</p>
+                </div>
+
+                <Message v-else-if="error" severity="error" :closable="false">
+                    {{ error }}
+                </Message>
+
+                <div v-else-if="events.length === 0" class="empty-state">
+                    <i class="pi pi-calendar-times"></i>
+                    <p>
+                        Keine Dienste gefunden, die von Ihren Gruppen besetzt werden
+                        können.
+                    </p>
+                </div>
+
+                <div v-else class="events-list">
+                    <EventCard
+                        v-for="event in events"
+                        :key="event.id"
+                        :event="event"
+                        :all-responses="allResponses"
+                        :user-responses="userResponses"
+                        :current-user="currentUser!"
+                        @response-saved="handleResponseSaved"
+                    />
+                </div>
+            </TabPanel>
+
+            <TabPanel v-if="userIsAdmin">
+                <template #header>
+                    <i class="pi pi-cog mr-2"></i>
+                    <span>Admin</span>
+                </template>
+                
+                <AdminPanel
+                    v-if="!loading"
+                    :responses="allResponses"
+                    :events="events"
+                    @response-deleted="handleResponseDeleted"
                 />
-            </div>
-            <div class="control-group">
-                <label for="days">Anzahl Tage</label>
-                <InputNumber
-                    id="days"
-                    v-model="days"
-                    :min="1"
-                    :max="365"
-                    showButtons
-                    @update:modelValue="loadData"
-                />
-            </div>
-            <div class="control-group export-btn">
-                <Button
-                    label="Excel Export"
-                    icon="pi pi-file-excel"
-                    severity="success"
-                    @click="handleExport"
-                    :disabled="events.length === 0"
-                />
-            </div>
-        </div>
-
-        <div v-if="loading" class="loading-container">
-            <ProgressSpinner />
-            <p>Dienste werden geladen...</p>
-        </div>
-
-        <Message v-else-if="error" severity="error" :closable="false">
-            {{ error }}
-        </Message>
-
-        <div v-else-if="events.length === 0" class="empty-state">
-            <i class="pi pi-calendar-times"></i>
-            <p>
-                Keine Dienste gefunden, die von Ihren Gruppen besetzt werden
-                können.
-            </p>
-        </div>
-
-        <div v-else class="events-list">
-            <EventCard
-                v-for="event in events"
-                :key="event.id"
-                :event="event"
-                :all-responses="allResponses"
-                :user-responses="userResponses"
-                :current-user="currentUser!"
-                @response-saved="handleResponseSaved"
-            />
-        </div>
-
-        <!-- Admin Panel - only visible to admins with admin mode enabled -->
-        <AdminPanel
-            v-if="showAdminPanel && !loading"
-            :responses="allResponses"
-            :events="events"
-            @response-deleted="handleResponseDeleted"
-        />
+            </TabPanel>
+        </TabView>
 
         <footer class="app-footer">
         </footer>
@@ -284,8 +283,18 @@ onMounted(loadData);
 
 .subtitle {
     color: #666;
-    margin: 0;
+    margin: 0 0 8px 0;
     font-size: 0.95rem;
+}
+
+.info-text {
+    color: #666;
+    margin: 0 0 16px 0;
+    font-size: 0.875rem;
+}
+
+.mr-2 {
+    margin-right: 8px;
 }
 
 .poll-controls {
