@@ -49,6 +49,23 @@ export interface UserInfo {
     name: string;
 }
 
+export interface PreparedResponseRow {
+    eventName: string;
+    weekday: string;
+    date: string;
+    time: string;
+    serviceName: string;
+    assignment: string;
+    userName: string;
+    response: string | null;
+    comment: string;
+    timestamp: string;
+    // Original data for deletion/reference
+    eventId: number;
+    serviceId: number;
+    userId: number;
+}
+
 export interface PollConfig {
     startDate: string;
     days: number;

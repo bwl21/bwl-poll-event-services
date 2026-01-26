@@ -620,4 +620,158 @@ export function resetAdminCache(): void {
     debugLog('Admin cache reset');
 }
 
+/**
+ * Format response value for display
+ */
+export function formatResponse(response: string | null): string {
+    switch (response) {
+        case 'yes':
+            return 'Ja';
+        case 'maybe':
+            return 'Vielleicht';
+        case 'no':
+            return 'Nein';
+        default:
+            return '-';
+    }
+}
 
+/**
+ * Format weekday from date string
+ */
+export function formatWeekday(dateStr: string): string {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('de-DE', {
+        weekday: 'long',
+    });
+}
+
+/**
+ * Format date only (no time)
+ */
+export function formatDateOnly(dateStr: string): string {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('de-DE', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    });
+}
+
+/**
+ * Format time only (no date)
+ */
+export function formatTime(dateStr: string): string {
+    const date = new Date(dateStr);
+    return date.toLocaleTimeString('de-DE', {
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
+/**
+ * Format timestamp
+ */
+export function formatTimestamp(timestamp: string): string {
+    const date = new Date(timestamp);
+    return date.toLocaleString('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
+/**
+ * Prepare response rows for display (shared logic for Excel export and Admin table)
+ */
+export function prepareResponseRows(
+    events: EventWithServices[],
+    responses: ServicePollEntry[],
+    includeEmpty: boolean = false
+): import('./types').PreparedResponseRow[] {
+    const rows: import('./types').PreparedResponseRow[] = [];
+    
+    console.log('[prepareResponseRows] Called with:', {
+        eventsCount: events.length,
+        responsesCount: responses.length,
+        includeEmpty,
+        firstEvent: events[0] ? { id: events[0].id, name: events[0].name, servicesCount: events[0].services.length } : null
+    });
+    
+    // Create a map for quick lookup
+    const responseMap = new Map<string, ServicePollEntry[]>();
+    for (const response of responses) {
+        const key = `${response.eventId}-${response.serviceId}`;
+        if (!responseMap.has(key)) {
+            responseMap.set(key, []);
+        }
+        responseMap.get(key)!.push(response);
+    }
+
+    // Build display rows
+    for (const event of events) {
+        console.log('[prepareResponseRows] Processing event:', event.id, event.name, 'services:', event.services.length);
+        for (const service of event.services) {
+            const serviceResponses = responseMap.get(`${event.id}-${service.id}`) || [];
+            
+            console.log('[prepareResponseRows] Event', event.id, 'Service', service.id, service.name, '- responses:', serviceResponses.length);
+            
+            // Format assignment info
+            let assignmentText = '';
+            if ((service as any).assignments && (service as any).assignments.length > 0) {
+                const assignment = (service as any).assignments[0];
+                assignmentText = assignment.isConfirmed 
+                    ? assignment.personName 
+                    : `${assignment.personName} (angefordert)`;
+            }
+
+            if (serviceResponses.length === 0) {
+                if (includeEmpty) {
+                    // Add row even if no responses (for Excel export)
+                    rows.push({
+                        eventName: event.name,
+                        weekday: formatWeekday(event.startDate),
+                        date: formatDateOnly(event.startDate),
+                        time: formatTime(event.startDate),
+                        serviceName: service.name,
+                        assignment: assignmentText,
+                        userName: '-',
+                        response: null,
+                        comment: '',
+                        timestamp: '',
+                        eventId: event.id,
+                        serviceId: service.id,
+                        userId: 0,
+                    });
+                }
+            } else {
+                for (const response of serviceResponses) {
+                    rows.push({
+                        eventName: event.name,
+                        weekday: formatWeekday(event.startDate),
+                        date: formatDateOnly(event.startDate),
+                        time: formatTime(event.startDate),
+                        serviceName: service.name,
+                        assignment: assignmentText,
+                        userName: response.userName || `User ${response.userId}`,
+                        response: response.response,
+                        comment: response.comment || '',
+                        timestamp: response.timestamp,
+                        eventId: response.eventId,
+                        serviceId: response.serviceId,
+                        userId: response.userId,
+                    });
+                }
+            }
+        }
+    }
+    
+    console.log('[prepareResponseRows] Prepared', rows.length, 'rows');
+    if (rows.length < 10) {
+        console.log('[prepareResponseRows] Sample rows:', rows);
+    }
+
+    return rows;
+}
