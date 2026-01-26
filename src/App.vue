@@ -116,6 +116,7 @@ onMounted(loadData);
             <div class="header-title">
                 <h1>Dienste-Umfrage</h1>
                 <span class="version">v{{ APP_VERSION }}</span>
+                <span v-if="userIsAdmin" class="admin-badge">Admin</span>
             </div>
             <p class="subtitle">
                 Bitte trage ein, für welche Dienste du verfügbar bist.
@@ -123,6 +124,14 @@ onMounted(loadData);
           <p class="">
             Es werden die Dienste angezeigt die durch eine deiner Gruppen besetzt werden können,
           </p>
+          <!-- Debug info when ?debug is in URL -->
+          <div v-if="DEBUG" class="debug-info">
+              <strong>Debug:</strong>
+              User: {{ currentUser?.name }} (ID: {{ currentUser?.id }}) |
+              Admin: {{ userIsAdmin ? 'Ja' : 'Nein' }} |
+              Events: {{ events.length }} |
+              Responses: {{ allResponses.length }}
+          </div>
         </header>
 
         <div class="poll-controls">
@@ -229,6 +238,26 @@ onMounted(loadData);
 
 .version {
     font-size: 0.875rem;
+    color: #999;
+    font-weight: normal;
+}
+
+.admin-badge {
+    font-size: 0.75rem;
+    background-color: #007bff;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.debug-info {
+    margin-top: 12px;
+    padding: 8px 12px;
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 4px;
+    font-size: 0.85rem;
     color: #999;
     font-weight: normal;
 }
