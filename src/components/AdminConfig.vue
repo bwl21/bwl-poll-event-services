@@ -5,7 +5,7 @@ import Column from 'primevue/column';
 import ToggleSwitch from 'primevue/toggleswitch';
 import ProgressSpinner from 'primevue/progressspinner';
 import { useToast } from 'primevue/usetoast';
-import type { AdminServiceConfig } from '../types';
+import type { AdminServiceConfig, EventWithServices } from '../types';
 import { getServiceConfigs, updateServiceConfig, getAllServicesFromResponses } from '../pollService';
 
 // Debug logging controlled by ?debug URL parameter
@@ -17,10 +17,29 @@ function debugLog(...args: any[]): void {
     }
 }
 
+const props = defineProps<{
+    events: EventWithServices[];
+}>();
+
 const toast = useToast();
 const loading = ref(true);
-const configs = ref<AdminServiceConfig[]>([]);
+const configs = ref<(AdminServiceConfig & { categoryName?: string })[]>([]);
 const savingServiceId = ref<number | null>(null);
+
+// Build map of serviceId to categoryName from events
+function getServiceCategoryMap(): Map<number, string> {
+    const map = new Map<number, string>();
+    for (const event of props.events) {
+        for (const service of event.services) {
+            if (!map.has(service.serviceId)) {
+                // Find the calendar/event name as category
+                const categoryName = event.name || 'Event';
+                map.set(service.serviceId, categoryName);
+            }
+        }
+    }
+    return map;
+}
 
 async function loadConfigs() {
     loading.value = true;
@@ -28,16 +47,20 @@ async function loadConfigs() {
         // Get all services that have responses
         const services = await getAllServicesFromResponses();
         const existingConfigs = await getServiceConfigs();
+        const categoryMap = getServiceCategoryMap();
 
         debugLog('Services with responses:', services);
         debugLog('Existing configs:', existingConfigs);
+        debugLog('Service category map:', categoryMap);
 
         // Merge: create config entries for all services
         configs.value = services.map((service) => {
             const existingConfig = existingConfigs.find((c) => c.serviceId === service.serviceId);
+            const categoryName = categoryMap.get(service.serviceId) || 'Sonstige';
             return {
                 serviceId: service.serviceId,
                 serviceName: existingConfig?.serviceName || service.serviceName,
+                categoryName,
                 votesVisible: existingConfig?.votesVisible ?? true, // Default to visible
                 id: existingConfig?.id,
             };
@@ -102,9 +125,14 @@ onMounted(loadConfigs);
             class="p-datatable-sm"
         >
             <Column field="serviceId" header="Service ID" sortable style="width: 120px" />
-            <Column field="serviceName" header="Service Name" sortable style="min-width: 200px">
+            <Column field="serviceName" header="Service Name" sortable style="min-width: 250px">
                 <template #body="{ data }">
-                    {{ data.serviceName || `Service ${data.serviceId}` }}
+                    <span v-if="data.categoryName" class="service-name">
+                        <strong>{{ data.categoryName }}</strong>: {{ data.serviceName || `Service ${data.serviceId}` }}
+                    </span>
+                    <span v-else>
+                        {{ data.serviceName || `Service ${data.serviceId}` }}
+                    </span>
                 </template>
             </Column>
             <Column header="Votes sichtbar" style="width: 150px">
@@ -159,5 +187,16 @@ onMounted(loadConfigs);
 
 .saving-indicator {
     color: #666;
+}
+
+.service-name {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.service-name strong {
+    font-size: 0.9rem;
+    color: #333;
 }
 </style>

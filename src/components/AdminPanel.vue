@@ -65,7 +65,7 @@ function handleExportAll() {
                     <i class="pi pi-sliders-h mr-2"></i>
                     <span>Service Config</span>
                 </template>
-                <AdminConfig />
+                <AdminConfig :events="events" />
             </TabPanel>
 
             <TabPanel header="Export">
