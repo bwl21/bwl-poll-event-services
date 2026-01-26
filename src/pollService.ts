@@ -135,6 +135,13 @@ export async function fetchEventsWithServices(
         const masterData = await churchtoolsClient.get<any>('/event/masterdata');
         const allServices: Service[] = masterData.services || [];
 
+        // Get service configurations (votes visibility)
+        const serviceConfigs = await getServiceConfigs();
+        const votesVisibilityMap = new Map<number, boolean>();
+        for (const config of serviceConfigs) {
+            votesVisibilityMap.set(config.serviceId, config.votesVisible);
+        }
+
         // Filter events that have services matching user's groups
         const eventsWithServices: EventWithServices[] = events
             .filter((event) => event.eventServices && event.eventServices.length > 0)
@@ -191,6 +198,7 @@ export async function fetchEventsWithServices(
                             sortKey: serviceDef?.sortKey,
                             isValid: eventService.isValid,
                             assignments,
+                            votesVisible: votesVisibilityMap.get(eventService.serviceId!) ?? true, // Default to visible
                         };
                     });
 

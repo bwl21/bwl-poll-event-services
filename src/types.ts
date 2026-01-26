@@ -35,6 +35,7 @@ export interface ServiceInfo {
     sortKey?: number;
     isValid?: boolean;
     assignments?: ServiceAssignment[];
+    votesVisible?: boolean;
 }
 
 export interface ServiceAssignment {
