@@ -22,6 +22,15 @@ import {
 
 const POLL_CATEGORY_SHORTY = 'poll-responses';
 
+// Debug logging controlled by ?debug URL parameter
+const DEBUG = new URLSearchParams(window.location.search).has('debug');
+
+function debugLog(...args: any[]): void {
+    if (DEBUG) {
+        console.log('[POLL DEBUG]', ...args);
+    }
+}
+
 let cachedUser: UserInfo | null = null;
 
 /**
@@ -82,7 +91,7 @@ export async function fetchEventsWithServices(
                 calendarIds.add(parseInt(calendarId, 10));
             }
         }
-        console.log('Calendar IDs found:', Array.from(calendarIds));
+        debugLog('Calendar IDs found:', Array.from(calendarIds));
 
         // Fetch appointments with resource bookings for all calendars
         const appointmentResources = new Map<number, any[]>();
@@ -91,16 +100,16 @@ export async function fetchEventsWithServices(
                 .map((id) => `calendar_ids[]=${id}`)
                 .join('&');
             const appointmentUrl = `/calendars/appointments?${calendarIdParams}&from=${fromDate}&to=${toDate}&include[]=bookings`;
-            console.log('Fetching appointments:', appointmentUrl);
+            debugLog('Fetching appointments:', appointmentUrl);
             const appointments = await churchtoolsClient.get<any[]>(appointmentUrl);
-            console.log('Appointments received:', appointments.length);
+            debugLog('Appointments received:', appointments.length);
             
             for (const apt of appointments) {
                 const appointmentId = apt.base?.id || apt.id;
                 const bookings = apt.base?.bookings || apt.bookings;
-                console.log('Appointment', appointmentId, 'structure:', apt);
+                debugLog('Appointment', appointmentId, 'structure:', apt);
                 if (appointmentId && bookings && bookings.length > 0) {
-                    console.log('Appointment', appointmentId, 'bookings:', bookings);
+                    debugLog('Appointment', appointmentId, 'bookings:', bookings);
                     appointmentResources.set(appointmentId, bookings);
                 }
             }
@@ -117,7 +126,7 @@ export async function fetchEventsWithServices(
             const groupId = g.group?.domainIdentifier;
             return groupId ? parseInt(groupId, 10) : null;
         }).filter((id): id is number => id !== null);
-        console.log('x User:', user.id, user.name, 'Groups:', userGroupIds);
+        debugLog('User:', user.id, user.name, 'Groups:', userGroupIds);
 
         // Get all services to check which groups they belong to
         const masterData = await churchtoolsClient.get<any>('/event/masterdata');
@@ -185,10 +194,10 @@ export async function fetchEventsWithServices(
                 // Extract resources from appointments
                 let resources: any[] = [];
                 const appointmentId = (event as any).appointmentId || (event as any).appointment?.id;
-                console.log('Event', event.id, 'appointmentId:', appointmentId);
+                debugLog('Event', event.id, 'appointmentId:', appointmentId);
                 if (appointmentId) {
                     const bookings = appointmentResources.get(appointmentId);
-                    console.log('Bookings for appointment', appointmentId, ':', bookings);
+                    debugLog('Bookings for appointment', appointmentId, ':', bookings);
                     if (bookings && bookings.length > 0) {
                         resources = bookings.map((b: any) => ({
                             name: b.base?.resource?.name || b.resource?.name || b.name || '',
