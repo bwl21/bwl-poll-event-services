@@ -6,7 +6,9 @@ import type { EventWithServices, ServicePollEntry } from './types';
 
 interface ExportRow {
     'Event': string;
+    'Wochentag': string;
     'Datum': string;
+    'Uhrzeit': string;
     'Dienst': string;
     'Besetzung': string;
     'Benutzer': string;
@@ -28,13 +30,25 @@ function formatResponse(response: string | null): string {
     }
 }
 
-function formatDate(dateStr: string): string {
+function formatWeekday(dateStr: string): string {
     const date = new Date(dateStr);
     return date.toLocaleDateString('de-DE', {
-        weekday: 'short',
+        weekday: 'long',
+    });
+}
+
+function formatDateOnly(dateStr: string): string {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('de-DE', {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
+    });
+}
+
+function formatTime(dateStr: string): string {
+    const date = new Date(dateStr);
+    return date.toLocaleTimeString('de-DE', {
         hour: '2-digit',
         minute: '2-digit',
     });
@@ -77,7 +91,9 @@ export function exportToExcel(
                 // Add row even if no responses
                 rows.push({
                     'Event': event.name,
-                    'Datum': formatDate(event.startDate),
+                    'Wochentag': formatWeekday(event.startDate),
+                    'Datum': formatDateOnly(event.startDate),
+                    'Uhrzeit': formatTime(event.startDate),
                     'Dienst': service.name,
                     'Besetzung': assignmentText,
                     'Benutzer': '-',
@@ -89,7 +105,9 @@ export function exportToExcel(
                 for (const response of serviceResponses) {
                     rows.push({
                         'Event': event.name,
-                        'Datum': formatDate(event.startDate),
+                        'Wochentag': formatWeekday(event.startDate),
+                        'Datum': formatDateOnly(event.startDate),
+                        'Uhrzeit': formatTime(event.startDate),
                         'Dienst': service.name,
                         'Besetzung': assignmentText,
                         'Benutzer': response.userName || `User ${response.userId}`,
@@ -103,7 +121,7 @@ export function exportToExcel(
     }
 
     // Create workbook and worksheet with column order
-    const columnOrder = ['Event', 'Datum', 'Dienst', 'Besetzung', 'Benutzer', 'Antwort', 'Kommentar', 'Zeitstempel'];
+    const columnOrder = ['Event', 'Wochentag', 'Datum', 'Uhrzeit', 'Dienst', 'Besetzung', 'Benutzer', 'Antwort', 'Kommentar', 'Zeitstempel'];
     const worksheet = XLSX.utils.json_to_sheet(rows, { header: columnOrder });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Umfrage-Antworten');
@@ -111,7 +129,9 @@ export function exportToExcel(
     // Set column widths
     worksheet['!cols'] = [
         { wch: 25 }, // Event
-        { wch: 20 }, // Datum
+        { wch: 12 }, // Wochentag
+        { wch: 12 }, // Datum
+        { wch: 10 }, // Uhrzeit
         { wch: 20 }, // Dienst
         { wch: 25 }, // Besetzung
         { wch: 20 }, // Benutzer
