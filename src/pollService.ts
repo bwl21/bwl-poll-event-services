@@ -612,3 +612,103 @@ export async function getAllServicesFromResponses(): Promise<{ serviceId: number
         serviceName,
     }));
 }
+
+/**
+ * Add admin permission for a user (for setup purposes)
+ * Call this from browser console: import { addAdminPermission } from './pollService'; addAdminPermission(userId);
+ */
+export async function addAdminPermission(userId: number): Promise<void> {
+    try {
+        const category = await getAdminConfigCategory();
+        if (!category) {
+            throw new Error('Could not create admin config category');
+        }
+
+        const module = await getOrCreateModule(
+            import.meta.env.VITE_KEY || 'bwl-poll-event-services',
+            'Event Service Poll',
+            'Poll extension for ChurchTools event services'
+        );
+
+        const values = await getCustomDataValues<{ type: string; userId?: number; permission?: string }>(
+            category.id,
+            module.id
+        );
+
+        // Check if permission already exists
+        const existing = values.find(
+            (v) => v.type === 'permission' && v.userId === userId && v.permission === POLL_ADMIN_PERMISSION
+        );
+
+        if (existing) {
+            debugLog('Admin permission already exists for user', userId);
+            return;
+        }
+
+        const permissionEntry = {
+            type: 'permission',
+            userId,
+            permission: POLL_ADMIN_PERMISSION,
+        };
+
+        await createCustomDataValue(
+            {
+                dataCategoryId: category.id,
+                value: JSON.stringify(permissionEntry),
+            },
+            module.id
+        );
+
+        // Reset cached admin status
+        cachedIsAdmin = null;
+        debugLog('Added admin permission for user', userId);
+    } catch (error) {
+        console.error('Error adding admin permission:', error);
+        throw error;
+    }
+}
+
+/**
+ * Remove admin permission for a user
+ */
+export async function removeAdminPermission(userId: number): Promise<void> {
+    try {
+        const category = await getAdminConfigCategory();
+        if (!category) {
+            return;
+        }
+
+        const module = await getOrCreateModule(
+            import.meta.env.VITE_KEY || 'bwl-poll-event-services',
+            'Event Service Poll',
+            'Poll extension for ChurchTools event services'
+        );
+
+        const values = await getCustomDataValues<{ type: string; userId?: number; permission?: string } & { id?: number }>(
+            category.id,
+            module.id
+        );
+
+        const permission = values.find(
+            (v) => v.type === 'permission' && v.userId === userId && v.permission === POLL_ADMIN_PERMISSION
+        );
+
+        if (permission && permission.id) {
+            await deleteCustomDataValue(category.id, permission.id, module.id);
+            cachedIsAdmin = null;
+            debugLog('Removed admin permission for user', userId);
+        }
+    } catch (error) {
+        console.error('Error removing admin permission:', error);
+        throw error;
+    }
+}
+
+/**
+ * Make current user an admin (convenience function for setup)
+ */
+export async function makeCurrentUserAdmin(): Promise<void> {
+    const user = await getCurrentUser();
+    await addAdminPermission(user.id);
+    debugLog('Made current user admin:', user.id, user.name);
+}

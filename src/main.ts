@@ -8,6 +8,7 @@ import './styles/primeicons-woff2-only.css';
 
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import App from './App.vue';
+import { makeCurrentUserAdmin, addAdminPermission, removeAdminPermission } from './pollService';
 
 // only import reset.css in development mode
 if (import.meta.env.MODE === 'development') {
@@ -22,6 +23,10 @@ declare const window: Window &
         CT_BASE_URL?: string;
         CT_EXTENSION_KEY?: string;
         CT_WINDOW_NAME?: string;
+        // Admin helper functions for console access
+        makeCurrentUserAdmin?: () => Promise<void>;
+        addAdminPermission?: (userId: number) => Promise<void>;
+        removeAdminPermission?: (userId: number) => Promise<void>;
     };
 
 const baseUrl = window.settings?.base_url ?? import.meta.env.VITE_BASE_URL;
@@ -34,6 +39,11 @@ const tabId = Math.random().toString(36).substring(2, 9); // Generate unique tab
 window.CT_BASE_URL = baseUrl;
 window.CT_EXTENSION_KEY = extensionKey;
 window.CT_WINDOW_NAME = `${shortKey}_${tabId}`;
+
+// Expose admin functions for console access (e.g., window.makeCurrentUserAdmin())
+window.makeCurrentUserAdmin = makeCurrentUserAdmin;
+window.addAdminPermission = addAdminPermission;
+window.removeAdminPermission = removeAdminPermission;
 
 const username = import.meta.env.VITE_USERNAME;
 const password = import.meta.env.VITE_PASSWORD;
