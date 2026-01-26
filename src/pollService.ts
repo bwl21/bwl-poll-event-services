@@ -391,8 +391,9 @@ export function getResponsesForService(
 let cachedIsAdmin: boolean | null = null;
 
 /**
- * Check if current user has "Poll Admin" permission via KV-Store category
- * Uses a separate category to store admin permissions
+ * Check if current user has "Poll Admin" permission
+ * A user is an admin if they have read access to the "poll-admin" KV-Store category
+ * This allows admins to be managed through ChurchTools permission system
  */
 export async function isUserAdmin(): Promise<boolean> {
     if (cachedIsAdmin !== null) return cachedIsAdmin;
@@ -404,31 +405,25 @@ export async function isUserAdmin(): Promise<boolean> {
             'Poll extension for ChurchTools event services'
         );
 
-        // Check if admin-config category exists and has permission entry for user
-        let category = await getCustomDataCategory(ADMIN_CONFIG_CATEGORY_SHORTY);
-        if (!category) {
-            // No admin config category = no admins defined
-            debugLog('No admin-config category found, user is not admin');
+        // Try to get the poll-admin category
+        // If user has no read permission, this will fail with 403
+        const adminCategory = await getCustomDataCategory<any>(ADMIN_CONFIG_CATEGORY_SHORTY);
+        
+        // If category exists and we can read it, user is admin
+        const isAdmin = adminCategory !== undefined && adminCategory !== null;
+        debugLog('Admin check for user: has access to poll-admin category =', isAdmin);
+        
+        cachedIsAdmin = isAdmin;
+        return isAdmin;
+    } catch (error: any) {
+        // If we get a 403 Forbidden, user has no access = not admin
+        if (error?.response?.status === 403 || error?.message?.includes('403')) {
+            debugLog('User has no permission to access poll-admin category');
             cachedIsAdmin = false;
             return false;
         }
-
-        const user = await getCurrentUser();
-        const values = await getCustomDataValues<{ type: string; userId?: number; permission?: string }>(
-            category.id,
-            module.id
-        );
-
-        // Look for a permission entry for this user with "Poll Admin" permission
-        const hasAdminPermission = values.some(
-            (v) => v.type === 'permission' && v.userId === user.id && v.permission === POLL_ADMIN_PERMISSION
-        );
-
-        debugLog('Admin check for user', user.id, ':', hasAdminPermission);
-        cachedIsAdmin = hasAdminPermission;
-        return hasAdminPermission;
-    } catch (error) {
-        console.error('Error checking admin status:', error);
+        // For other errors, log but assume not admin
+        debugLog('Error checking admin status:', error);
         cachedIsAdmin = false;
         return false;
     }
@@ -614,101 +609,11 @@ export async function getAllServicesFromResponses(): Promise<{ serviceId: number
 }
 
 /**
- * Add admin permission for a user (for setup purposes)
- * Call this from browser console: import { addAdminPermission } from './pollService'; addAdminPermission(userId);
+ * Reset admin cache (for development/testing)
  */
-export async function addAdminPermission(userId: number): Promise<void> {
-    try {
-        const category = await getAdminConfigCategory();
-        if (!category) {
-            throw new Error('Could not create admin config category');
-        }
-
-        const module = await getOrCreateModule(
-            import.meta.env.VITE_KEY || 'bwl-poll-event-services',
-            'Event Service Poll',
-            'Poll extension for ChurchTools event services'
-        );
-
-        const values = await getCustomDataValues<{ type: string; userId?: number; permission?: string }>(
-            category.id,
-            module.id
-        );
-
-        // Check if permission already exists
-        const existing = values.find(
-            (v) => v.type === 'permission' && v.userId === userId && v.permission === POLL_ADMIN_PERMISSION
-        );
-
-        if (existing) {
-            debugLog('Admin permission already exists for user', userId);
-            return;
-        }
-
-        const permissionEntry = {
-            type: 'permission',
-            userId,
-            permission: POLL_ADMIN_PERMISSION,
-        };
-
-        await createCustomDataValue(
-            {
-                dataCategoryId: category.id,
-                value: JSON.stringify(permissionEntry),
-            },
-            module.id
-        );
-
-        // Reset cached admin status
-        cachedIsAdmin = null;
-        debugLog('Added admin permission for user', userId);
-    } catch (error) {
-        console.error('Error adding admin permission:', error);
-        throw error;
-    }
+export function resetAdminCache(): void {
+    cachedIsAdmin = null;
+    debugLog('Admin cache reset');
 }
 
-/**
- * Remove admin permission for a user
- */
-export async function removeAdminPermission(userId: number): Promise<void> {
-    try {
-        const category = await getAdminConfigCategory();
-        if (!category) {
-            return;
-        }
 
-        const module = await getOrCreateModule(
-            import.meta.env.VITE_KEY || 'bwl-poll-event-services',
-            'Event Service Poll',
-            'Poll extension for ChurchTools event services'
-        );
-
-        const values = await getCustomDataValues<{ type: string; userId?: number; permission?: string } & { id?: number }>(
-            category.id,
-            module.id
-        );
-
-        const permission = values.find(
-            (v) => v.type === 'permission' && v.userId === userId && v.permission === POLL_ADMIN_PERMISSION
-        );
-
-        if (permission && permission.id) {
-            await deleteCustomDataValue(category.id, permission.id, module.id);
-            cachedIsAdmin = null;
-            debugLog('Removed admin permission for user', userId);
-        }
-    } catch (error) {
-        console.error('Error removing admin permission:', error);
-        throw error;
-    }
-}
-
-/**
- * Make current user an admin (convenience function for setup)
- */
-export async function makeCurrentUserAdmin(): Promise<void> {
-    const user = await getCurrentUser();
-    await addAdminPermission(user.id);
-    debugLog('Made current user admin:', user.id, user.name);
-}
