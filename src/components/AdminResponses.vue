@@ -66,6 +66,30 @@ function formatResponse(response: string | null): string {
     }
 }
 
+function formatWeekday(dateStr: string): string {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('de-DE', {
+        weekday: 'long',
+    });
+}
+
+function formatDate(dateStr: string): string {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('de-DE', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    });
+}
+
+function formatTime(dateStr: string): string {
+    const date = new Date(dateStr);
+    return date.toLocaleTimeString('de-DE', {
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
 function formatTimestamp(timestamp: string): string {
     const date = new Date(timestamp);
     return date.toLocaleString('de-DE', {
@@ -126,15 +150,39 @@ async function handleDelete() {
             stripedRows
             class="p-datatable-sm"
         >
-            <Column field="eventId" header="Event" sortable style="min-width: 200px">
+            <Column field="eventId" header="Event" sortable style="min-width: 180px">
                 <template #body="{ data }">
                     <span v-if="eventMap.has(data.eventId)" class="event-info">
                         {{ eventMap.get(data.eventId)?.name }}
                     </span>
-                    <span v-else class="text-muted">Event {{ data.eventId }}</span>
+                    <span v-else class="text-muted">-</span>
                 </template>
             </Column>
-            <Column field="serviceId" header="Service" sortable style="min-width: 250px">
+            <Column header="Wochentag" sortable style="width: 100px">
+                <template #body="{ data }">
+                    <span v-if="eventMap.has(data.eventId)">
+                        {{ formatWeekday(eventMap.get(data.eventId)?.startDate || '') }}
+                    </span>
+                    <span v-else class="text-muted">-</span>
+                </template>
+            </Column>
+            <Column header="Datum" sortable style="width: 100px">
+                <template #body="{ data }">
+                    <span v-if="eventMap.has(data.eventId)">
+                        {{ formatDate(eventMap.get(data.eventId)?.startDate || '') }}
+                    </span>
+                    <span v-else class="text-muted">-</span>
+                </template>
+            </Column>
+            <Column header="Uhrzeit" sortable style="width: 80px">
+                <template #body="{ data }">
+                    <span v-if="eventMap.has(data.eventId)">
+                        {{ formatTime(eventMap.get(data.eventId)?.startDate || '') }}
+                    </span>
+                    <span v-else class="text-muted">-</span>
+                </template>
+            </Column>
+            <Column field="serviceId" header="Dienst" sortable style="min-width: 220px">
                 <template #body="{ data }">
                     <span v-if="serviceMap.has(data.serviceId)" class="service-info">
                         <strong>{{ serviceMap.get(data.serviceId)?.categoryName }}</strong>: {{ serviceMap.get(data.serviceId)?.name }}
@@ -142,29 +190,34 @@ async function handleDelete() {
                     <span v-else class="text-muted">-</span>
                 </template>
             </Column>
-            <Column field="userName" header="Benutzer" sortable style="min-width: 150px">
+            <Column header="Besetzung" style="min-width: 150px">
+                <template #body="{ data }">
+                    <span class="text-muted">-</span>
+                </template>
+            </Column>
+            <Column field="userName" header="Benutzer" sortable style="min-width: 130px">
                 <template #body="{ data }">
                     {{ data.userName || `User ${data.userId}` }}
                 </template>
             </Column>
-            <Column field="response" header="Antwort" sortable style="width: 120px">
+            <Column field="response" header="Antwort" sortable style="width: 100px">
                 <template #body="{ data }">
                     <span :class="['response-badge', `response-${data.response || 'none'}`]">
                         {{ formatResponse(data.response) }}
                     </span>
                 </template>
             </Column>
-            <Column field="comment" header="Kommentar" style="min-width: 200px">
+            <Column field="comment" header="Kommentar" style="min-width: 180px">
                 <template #body="{ data }">
                     {{ data.comment || '-' }}
                 </template>
             </Column>
-            <Column field="timestamp" header="Zeitstempel" sortable style="width: 160px">
+            <Column field="timestamp" header="Zeitstempel" sortable style="width: 140px">
                 <template #body="{ data }">
                     {{ formatTimestamp(data.timestamp) }}
                 </template>
             </Column>
-            <Column header="Aktionen" style="width: 100px">
+            <Column header="Aktionen" style="width: 80px">
                 <template #body="{ data }">
                     <Button
                         icon="pi pi-trash"
