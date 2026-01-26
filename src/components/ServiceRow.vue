@@ -11,6 +11,15 @@ import type {
     UserInfo,
 } from '../types';
 
+// Debug logging controlled by ?debug URL parameter
+const DEBUG = new URLSearchParams(window.location.search).has('debug');
+
+function debugLog(...args: any[]): void {
+    if (DEBUG) {
+        console.log('[SERVICE-ROW DEBUG]', ...args);
+    }
+}
+
 const props = defineProps<{
     eventId: number;
     service: ServiceInfo;
@@ -107,7 +116,7 @@ async function saveResponse() {
             statusMessage.value = null;
         }, 2000);
     } catch (e) {
-        console.error('Error saving response:', e);
+        debugLog('Error saving response:', e);
         statusMessage.value = { type: 'error', text: 'Fehler beim Speichern' };
     } finally {
         saving.value = false;

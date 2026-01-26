@@ -9,6 +9,15 @@ import type {
     UserInfo,
 } from '../types';
 
+// Debug logging controlled by ?debug URL parameter
+const DEBUG = new URLSearchParams(window.location.search).has('debug');
+
+function debugLog(...args: any[]): void {
+    if (DEBUG) {
+        console.log('[EVENT-CARD DEBUG]', ...args);
+    }
+}
+
 const props = defineProps<{
     event: EventWithServices;
     allResponses: ServicePollEntry[];
@@ -50,7 +59,7 @@ const resourceNames = computed(() => {
     if (!props.event.resources || props.event.resources.length === 0) {
         return '';
     }
-    console.log('Resources for event', props.event.id, ':', props.event.resources);
+    debugLog('Resources for event', props.event.id, ':', props.event.resources);
     return props.event.resources.map((r) => r.name).join(', ');
 });
 

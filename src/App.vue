@@ -17,6 +17,15 @@ import {
 import { exportToExcel } from './exportService';
 import type { EventWithServices, ServicePollEntry, UserInfo } from './types';
 
+// Debug logging controlled by ?debug URL parameter
+const DEBUG = new URLSearchParams(window.location.search).has('debug');
+
+function debugLog(...args: any[]): void {
+    if (DEBUG) {
+        console.log('[APP DEBUG]', ...args);
+    }
+}
+
 const APP_VERSION = __APP_VERSION__;
 
 const loading = ref(true);
@@ -51,7 +60,7 @@ async function loadData() {
         events.value = eventsData;
         allResponses.value = responsesData;
     } catch (e) {
-        console.error('Error loading data:', e);
+        debugLog('Error loading data:', e);
         error.value =
             'Die Dienste konnten nicht geladen werden. Bitte versuchen Sie es später erneut.';
     } finally {
