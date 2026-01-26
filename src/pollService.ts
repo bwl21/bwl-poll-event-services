@@ -582,22 +582,26 @@ export async function deleteResponse(
 }
 
 /**
- * Get all unique services from all responses (for admin config)
+ * Get all services from masterdata (for admin config)
  */
-export async function getAllServicesFromResponses(): Promise<{ serviceId: number; serviceName: string }[]> {
-    const responses = await loadAllPollResponses();
-    const serviceMap = new Map<number, string>();
-
-    for (const response of responses) {
-        if (!serviceMap.has(response.serviceId)) {
-            serviceMap.set(response.serviceId, `Service ${response.serviceId}`);
-        }
-    }
-
-    return Array.from(serviceMap.entries()).map(([serviceId, serviceName]) => ({
-        serviceId,
-        serviceName,
-    }));
+export async function getAllServicesFromResponses(): Promise<{ serviceId: number; serviceName: string; categoryName?: string }[]> {
+    // Get all services from masterdata
+    const masterData = await churchtoolsClient.get<any>('/event/masterdata');
+    const allServices: Service[] = masterData.services || [];
+    const serviceGroups = masterData.serviceGroups || [];
+    
+    return allServices.map(service => {
+        const serviceGroup = serviceGroups.find((sg: any) => sg.id === (service as any).serviceGroupId);
+        return {
+            serviceId: service.id!,
+            serviceName: service.name || `Service ${service.id}`,
+            categoryName: serviceGroup?.name || undefined,
+        };
+    }).sort((a, b) => {
+        // Sort by category first, then by service name
+        const catCompare = (a.categoryName || '').localeCompare(b.categoryName || '');
+        return catCompare !== 0 ? catCompare : a.serviceName.localeCompare(b.serviceName);
+    });
 }
 
 /**

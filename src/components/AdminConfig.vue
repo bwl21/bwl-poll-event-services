@@ -26,41 +26,23 @@ const loading = ref(true);
 const configs = ref<(AdminServiceConfig & { categoryName?: string })[]>([]);
 const savingServiceId = ref<number | null>(null);
 
-// Build map of serviceId to categoryName from events
-function getServiceCategoryMap(): Map<number, string> {
-    const map = new Map<number, string>();
-    for (const event of props.events) {
-        for (const service of event.services) {
-            if (!map.has(service.serviceId)) {
-                // Find the calendar/event name as category
-                const categoryName = event.name || 'Event';
-                map.set(service.serviceId, categoryName);
-            }
-        }
-    }
-    return map;
-}
-
 async function loadConfigs() {
     loading.value = true;
     try {
-        // Get all services that have responses
+        // Get all services from masterdata
         const services = await getAllServicesFromResponses();
         const existingConfigs = await getServiceConfigs();
-        const categoryMap = getServiceCategoryMap();
 
-        debugLog('Services with responses:', services);
+        debugLog('Services from masterdata:', services);
         debugLog('Existing configs:', existingConfigs);
-        debugLog('Service category map:', categoryMap);
 
         // Merge: create config entries for all services
         configs.value = services.map((service) => {
             const existingConfig = existingConfigs.find((c) => c.serviceId === service.serviceId);
-            const categoryName = categoryMap.get(service.serviceId) || 'Sonstige';
             return {
                 serviceId: service.serviceId,
-                serviceName: existingConfig?.serviceName || service.serviceName,
-                categoryName,
+                serviceName: service.serviceName,
+                categoryName: service.categoryName,
                 votesVisible: existingConfig?.votesVisible ?? true, // Default to visible
                 id: existingConfig?.id,
             };
@@ -125,14 +107,14 @@ onMounted(loadConfigs);
             class="p-datatable-sm"
         >
             <Column field="serviceId" header="Service ID" sortable style="width: 120px" />
+            <Column field="categoryName" header="Kategorie" sortable style="width: 200px">
+                <template #body="{ data }">
+                    {{ data.categoryName || '-' }}
+                </template>
+            </Column>
             <Column field="serviceName" header="Service Name" sortable style="min-width: 250px">
                 <template #body="{ data }">
-                    <span v-if="data.categoryName" class="service-name">
-                        <strong>{{ data.categoryName }}</strong>: {{ data.serviceName || `Service ${data.serviceId}` }}
-                    </span>
-                    <span v-else>
-                        {{ data.serviceName || `Service ${data.serviceId}` }}
-                    </span>
+                    {{ data.serviceName || `Service ${data.serviceId}` }}
                 </template>
             </Column>
             <Column header="Votes sichtbar" style="width: 150px">
@@ -187,16 +169,5 @@ onMounted(loadConfigs);
 
 .saving-indicator {
     color: #666;
-}
-
-.service-name {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.service-name strong {
-    font-size: 0.9rem;
-    color: #333;
 }
 </style>
