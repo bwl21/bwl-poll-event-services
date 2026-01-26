@@ -24,7 +24,6 @@ import {
 
 const POLL_CATEGORY_SHORTY = 'poll-responses';
 const ADMIN_CONFIG_CATEGORY_SHORTY = 'admin-config';
-const POLL_ADMIN_PERMISSION = 'Poll Admin';
 
 // Debug logging controlled by ?debug URL parameter
 const DEBUG = new URLSearchParams(window.location.search).has('debug');
