@@ -23,8 +23,9 @@ const props = defineProps<{
 
 const toast = useToast();
 const loading = ref(true);
+const error = ref<string | null>(null);
 const configs = ref<(AdminServiceConfig & { categoryName?: string })[]>([]);
-const savingServiceId = ref<number | null>(null);
+const savingServiceIds = ref(new Set<number>()); // Prevent race conditions
 const filterText = ref('');
 
 const filteredConfigs = computed(() => {
@@ -44,6 +45,7 @@ const filteredConfigs = computed(() => {
 
 async function loadConfigs() {
     loading.value = true;
+    error.value = null;
     try {
         // Get all services from masterdata
         const services = await getAllServicesFromResponses();
@@ -64,12 +66,14 @@ async function loadConfigs() {
                 id: existingConfig?.id,
             };
         });
-    } catch (error) {
-        console.error('Error loading configs:', error);
+    } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Unbekannter Fehler';
+        error.value = errorMsg;
+        debugLog('Error loading configs:', err);
         toast.add({
             severity: 'error',
-            summary: 'Fehler',
-            detail: 'Konfiguration konnte nicht geladen werden',
+            summary: 'Fehler beim Laden',
+            detail: `Konfiguration konnte nicht geladen werden: ${errorMsg}`,
             life: 5000,
         });
     } finally {
@@ -78,10 +82,17 @@ async function loadConfigs() {
 }
 
 async function handleToggleVotes(config: AdminServiceConfig, newValue: boolean) {
-    savingServiceId.value = config.serviceId;
+    // Prevent double-toggling (race condition)
+    if (savingServiceIds.value.has(config.serviceId)) {
+        return;
+    }
+    
+    savingServiceIds.value.add(config.serviceId);
+    const previousValue = config.votesVisible;
+    
     try {
+        config.votesVisible = newValue; // Optimistic update
         await updateServiceConfig(config.serviceId, newValue, config.serviceName, config.enabled);
-        config.votesVisible = newValue;
         debugLog('Updated vote visibility for service', config.serviceId, 'to', newValue);
         toast.add({
             severity: 'success',
@@ -89,24 +100,33 @@ async function handleToggleVotes(config: AdminServiceConfig, newValue: boolean) 
             detail: `Sichtbarkeit für ${config.serviceName || 'Service ' + config.serviceId} geändert`,
             life: 3000,
         });
-    } catch (error) {
-        console.error('Error updating config:', error);
+    } catch (err) {
+        config.votesVisible = previousValue; // Revert on error
+        const errorMsg = err instanceof Error ? err.message : 'Unbekannter Fehler';
+        debugLog('Error updating config:', err);
         toast.add({
             severity: 'error',
-            summary: 'Fehler',
-            detail: 'Änderung konnte nicht gespeichert werden',
+            summary: 'Fehler beim Speichern',
+            detail: `Änderung konnte nicht gespeichert werden: ${errorMsg}`,
             life: 5000,
         });
     } finally {
-        savingServiceId.value = null;
+        savingServiceIds.value.delete(config.serviceId);
     }
 }
 
 async function handleToggleEnabled(config: AdminServiceConfig, newValue: boolean) {
-    savingServiceId.value = config.serviceId;
+    // Prevent double-toggling (race condition)
+    if (savingServiceIds.value.has(config.serviceId)) {
+        return;
+    }
+    
+    savingServiceIds.value.add(config.serviceId);
+    const previousValue = config.enabled;
+    
     try {
+        config.enabled = newValue; // Optimistic update
         await updateServiceConfig(config.serviceId, config.votesVisible, config.serviceName, newValue);
-        config.enabled = newValue;
         debugLog('Updated enabled status for service', config.serviceId, 'to', newValue);
         toast.add({
             severity: 'success',
@@ -114,16 +134,18 @@ async function handleToggleEnabled(config: AdminServiceConfig, newValue: boolean
             detail: `Status für ${config.serviceName || 'Service ' + config.serviceId} geändert`,
             life: 3000,
         });
-    } catch (error) {
-        console.error('Error updating config:', error);
+    } catch (err) {
+        config.enabled = previousValue; // Revert on error
+        const errorMsg = err instanceof Error ? err.message : 'Unbekannter Fehler';
+        debugLog('Error updating config:', err);
         toast.add({
             severity: 'error',
-            summary: 'Fehler',
-            detail: 'Änderung konnte nicht gespeichert werden',
+            summary: 'Fehler beim Speichern',
+            detail: `Änderung konnte nicht gespeichert werden: ${errorMsg}`,
             life: 5000,
         });
     } finally {
-        savingServiceId.value = null;
+        savingServiceIds.value.delete(config.serviceId);
     }
 }
 
@@ -135,6 +157,17 @@ onMounted(loadConfigs);
         <div v-if="loading" class="loading-container">
             <ProgressSpinner />
             <p>Konfiguration wird geladen...</p>
+        </div>
+
+        <div v-else-if="error" class="error-state">
+            <i class="pi pi-exclamation-triangle"></i>
+            <p>{{ error }}</p>
+            <Button
+                label="Erneut versuchen"
+                icon="pi pi-refresh"
+                severity="warning"
+                @click="loadConfigs"
+            />
         </div>
 
         <div v-else-if="configs.length === 0" class="empty-state">
@@ -174,9 +207,9 @@ onMounted(loadConfigs);
                         <ToggleSwitch
                             :modelValue="data.enabled"
                             @update:modelValue="(val: boolean) => handleToggleEnabled(data, val)"
-                            :disabled="savingServiceId === data.serviceId"
+                            :disabled="savingServiceIds.has(data.serviceId)"
                         />
-                        <span v-if="savingServiceId === data.serviceId" class="saving-indicator">
+                        <span v-if="savingServiceIds.has(data.serviceId)" class="saving-indicator">
                             <i class="pi pi-spin pi-spinner"></i>
                         </span>
                     </div>
@@ -188,9 +221,9 @@ onMounted(loadConfigs);
                         <ToggleSwitch
                             :modelValue="data.votesVisible"
                             @update:modelValue="(val: boolean) => handleToggleVotes(data, val)"
-                            :disabled="savingServiceId === data.serviceId"
+                            :disabled="savingServiceIds.has(data.serviceId)"
                         />
-                        <span v-if="savingServiceId === data.serviceId" class="saving-indicator">
+                        <span v-if="savingServiceIds.has(data.serviceId)" class="saving-indicator">
                             <i class="pi pi-spin pi-spinner"></i>
                         </span>
                     </div>
@@ -224,6 +257,23 @@ onMounted(loadConfigs);
     font-size: 2rem;
     margin-bottom: 12px;
     opacity: 0.5;
+}
+
+.error-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #dc3545;
+}
+
+.error-state i {
+    font-size: 2rem;
+    margin-bottom: 12px;
+    opacity: 0.8;
+}
+
+.error-state p {
+    margin-bottom: 20px;
+    color: #666;
 }
 
 .filter-section {
