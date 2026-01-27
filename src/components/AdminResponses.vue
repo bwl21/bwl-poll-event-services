@@ -4,6 +4,7 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
+import ToggleSwitch from 'primevue/toggleswitch';
 import type { ServicePollEntry, EventWithServices } from '../types';
 import { deleteResponse, prepareResponseRows, formatResponse, formatTimestamp } from '../pollService';
 
@@ -19,10 +20,11 @@ const emit = defineEmits<{
 const deleteDialogVisible = ref(false);
 const selectedResponse = ref<any | null>(null);
 const deleting = ref(false);
+const showEmptyServices = ref(true);
 
 // Use shared data preparation logic (same as Excel export)
 const allRows = computed(() => {
-    return prepareResponseRows(props.events, props.responses, false); // includeEmpty = false for table
+    return prepareResponseRows(props.events, props.responses, showEmptyServices.value);
 });
 
 function confirmDelete(row: import('../types').PreparedResponseRow) {
@@ -61,6 +63,11 @@ async function handleDelete() {
 
 <template>
     <div class="admin-responses">
+        <div class="toggle-container">
+            <label for="showEmpty">Leere Services anzeigen</label>
+            <ToggleSwitch id="showEmpty" v-model="showEmptyServices" />
+        </div>
+        
         <DataTable 
             :value="allRows" 
             paginator 
@@ -140,3 +147,21 @@ async function handleDelete() {
         </Dialog>
     </div>
 </template>
+
+<style scoped>
+.toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.toggle-container label {
+    font-size: 0.875rem;
+    color: #666;
+    margin: 0;
+}
+</style>
