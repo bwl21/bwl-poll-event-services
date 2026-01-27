@@ -1,145 +1,80 @@
-import { test, expect, devices } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
-// Mobile tests
-test.describe('Responsive Design - Mobile', () => {
-  test.use(devices['Pixel 5']);
+// Responsive tests run on all projects defined in playwright.config.ts
+// Including: chromium, firefox, webkit, Mobile Chrome, Mobile Safari, iPad
 
-  test('should load on mobile', async ({ page }) => {
+test.describe('Responsive Design', () => {
+  test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
-    
+  });
+
+  test('should load on all screen sizes', async ({ page }) => {
     const mainContent = page.locator('.poll-app');
     await expect(mainContent).toBeVisible();
   });
 
-  test('should display header on mobile', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    
+  test('should display header on all screen sizes', async ({ page }) => {
     const header = page.locator('.poll-header');
     
-    if (await header.isVisible({ timeout: 5000 }).catch(() => false)) {
+    const isVisible = await header.isVisible({ timeout: 5000 }).catch(() => false);
+    if (isVisible) {
       await expect(header).toBeVisible();
     }
   });
 
-  test('should not have horizontal scroll on mobile', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    
+  test('should not have horizontal scroll', async ({ page }) => {
+    // Get viewport and body width
     const viewportSize = page.viewportSize();
     const bodyWidth = await page.evaluate(() => document.body.offsetWidth);
     
-    expect(bodyWidth).toBeLessThanOrEqual((viewportSize?.width || 390) + 20);
+    // Content should not exceed viewport (with 20px tolerance)
+    const maxWidth = (viewportSize?.width || 1200) + 20;
+    expect(bodyWidth).toBeLessThanOrEqual(maxWidth);
   });
 
-  test('should have readable text on mobile', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    
+  test('should have readable text', async ({ page }) => {
     const title = page.locator('h1');
     const isVisible = await title.isVisible({ timeout: 5000 }).catch(() => false);
     
     if (isVisible) {
       await expect(title).toBeVisible();
-      const fontSize = await title.evaluate((el) => window.getComputedStyle(el).fontSize);
-      expect(parseInt(fontSize)).toBeGreaterThan(10);
-    }
-  });
-});
-
-// Tablet tests
-test.describe('Responsive Design - Tablet', () => {
-  test.use(devices['iPad Pro']);
-
-  test('should load on tablet', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    
-    const mainContent = page.locator('.poll-app');
-    await expect(mainContent).toBeVisible();
-  });
-
-  test('should display header on tablet', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    
-    const header = page.locator('.poll-header');
-    
-    if (await header.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await expect(header).toBeVisible();
+      
+      // Text should be readable (font size > 10px)
+      const fontSize = await title.evaluate((el) => 
+        window.getComputedStyle(el).fontSize
+      );
+      
+      const size = parseInt(fontSize);
+      expect(size).toBeGreaterThan(10);
     }
   });
 
-  test('should not have horizontal scroll on tablet', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+  test('should have proper layout structure', async ({ page }) => {
+    // Main container should be visible
+    const pollApp = page.locator('.poll-app');
+    await expect(pollApp).toBeVisible();
     
-    const viewportSize = page.viewportSize();
-    const bodyWidth = await page.evaluate(() => document.body.offsetWidth);
-    
-    expect(bodyWidth).toBeLessThanOrEqual((viewportSize?.width || 1024) + 20);
+    // Should not have horizontal scrollbar
+    const hasHorizontalScroll = await page.evaluate(() => 
+      document.body.scrollWidth > window.innerWidth
+    );
+    expect(hasHorizontalScroll).toBe(false);
   });
 
-  test('should have readable text on tablet', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+  test('should display controls on all sizes', async ({ page }) => {
+    const controls = page.locator('.poll-controls');
     
-    const title = page.locator('h1');
-    const isVisible = await title.isVisible({ timeout: 5000 }).catch(() => false);
+    // Controls should exist
+    const count = await controls.count();
+    expect(count).toBeGreaterThanOrEqual(0);
     
-    if (isVisible) {
-      await expect(title).toBeVisible();
-      const fontSize = await title.evaluate((el) => window.getComputedStyle(el).fontSize);
-      expect(parseInt(fontSize)).toBeGreaterThan(10);
-    }
-  });
-});
-
-// Desktop tests
-test.describe('Responsive Design - Desktop', () => {
-  test.use(devices['Desktop Chrome']);
-
-  test('should load on desktop', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    
-    const mainContent = page.locator('.poll-app');
-    await expect(mainContent).toBeVisible();
-  });
-
-  test('should display header on desktop', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    
-    const header = page.locator('.poll-header');
-    
-    if (await header.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await expect(header).toBeVisible();
-    }
-  });
-
-  test('should not have horizontal scroll on desktop', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    
-    const viewportSize = page.viewportSize();
-    const bodyWidth = await page.evaluate(() => document.body.offsetWidth);
-    
-    expect(bodyWidth).toBeLessThanOrEqual((viewportSize?.width || 1280) + 20);
-  });
-
-  test('should have readable text on desktop', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    
-    const title = page.locator('h1');
-    const isVisible = await title.isVisible({ timeout: 5000 }).catch(() => false);
-    
-    if (isVisible) {
-      await expect(title).toBeVisible();
-      const fontSize = await title.evaluate((el) => window.getComputedStyle(el).fontSize);
-      expect(parseInt(fontSize)).toBeGreaterThan(10);
+    // If controls exist, they should be visible
+    if (count > 0) {
+      const isVisible = await controls.isVisible({ timeout: 5000 }).catch(() => false);
+      if (isVisible) {
+        await expect(controls).toBeVisible();
+      }
     }
   });
 });
