@@ -79,4 +79,5 @@ export interface AdminServiceConfig {
     serviceId: number;
     serviceName?: string;
     votesVisible: boolean;
+    enabled: boolean; // Whether the service should be displayed in polls
 }

@@ -477,8 +477,13 @@ export async function getServiceConfigs(): Promise<AdminServiceConfig[]> {
             module.id
         );
 
-        // Filter only service config entries (not permission entries)
-        return values.filter((v) => v.type === 'service-config' || v.serviceId !== undefined);
+        // Filter only service config entries and set defaults for missing fields
+        return values
+            .filter((v) => v.type === 'service-config' || v.serviceId !== undefined)
+            .map((v) => ({
+                ...v,
+                enabled: v.enabled ?? true, // Default to enabled for backward compatibility
+            }));
     } catch (error) {
         console.error('Error loading service configs:', error);
         return [];
@@ -491,7 +496,8 @@ export async function getServiceConfigs(): Promise<AdminServiceConfig[]> {
 export async function updateServiceConfig(
     serviceId: number,
     votesVisible: boolean,
-    serviceName?: string
+    serviceName?: string,
+    enabled: boolean = true
 ): Promise<void> {
     try {
         const category = await getAdminConfigCategory();
@@ -518,6 +524,7 @@ export async function updateServiceConfig(
             serviceId,
             serviceName,
             votesVisible,
+            enabled,
         };
 
         if (existing && existing.id) {

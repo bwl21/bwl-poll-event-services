@@ -60,6 +60,7 @@ async function loadConfigs() {
                 serviceName: service.serviceName,
                 categoryName: service.categoryName,
                 votesVisible: existingConfig?.votesVisible ?? true, // Default to visible
+                enabled: existingConfig?.enabled ?? true, // Default to enabled
                 id: existingConfig?.id,
             };
         });
@@ -76,16 +77,41 @@ async function loadConfigs() {
     }
 }
 
-async function handleToggle(config: AdminServiceConfig, newValue: boolean) {
+async function handleToggleVotes(config: AdminServiceConfig, newValue: boolean) {
     savingServiceId.value = config.serviceId;
     try {
-        await updateServiceConfig(config.serviceId, newValue, config.serviceName);
+        await updateServiceConfig(config.serviceId, newValue, config.serviceName, config.enabled);
         config.votesVisible = newValue;
-        debugLog('Updated visibility for service', config.serviceId, 'to', newValue);
+        debugLog('Updated vote visibility for service', config.serviceId, 'to', newValue);
         toast.add({
             severity: 'success',
             summary: 'Gespeichert',
             detail: `Sichtbarkeit für ${config.serviceName || 'Service ' + config.serviceId} geändert`,
+            life: 3000,
+        });
+    } catch (error) {
+        console.error('Error updating config:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Fehler',
+            detail: 'Änderung konnte nicht gespeichert werden',
+            life: 5000,
+        });
+    } finally {
+        savingServiceId.value = null;
+    }
+}
+
+async function handleToggleEnabled(config: AdminServiceConfig, newValue: boolean) {
+    savingServiceId.value = config.serviceId;
+    try {
+        await updateServiceConfig(config.serviceId, config.votesVisible, config.serviceName, newValue);
+        config.enabled = newValue;
+        debugLog('Updated enabled status for service', config.serviceId, 'to', newValue);
+        toast.add({
+            severity: 'success',
+            summary: 'Gespeichert',
+            detail: `Status für ${config.serviceName || 'Service ' + config.serviceId} geändert`,
             life: 3000,
         });
     } catch (error) {
@@ -142,12 +168,26 @@ onMounted(loadConfigs);
                     {{ data.serviceName || `Service ${data.serviceId}` }}
                 </template>
             </Column>
+            <Column header="Aktiv" style="width: 100px">
+                <template #body="{ data }">
+                    <div class="toggle-container">
+                        <ToggleSwitch
+                            :modelValue="data.enabled"
+                            @update:modelValue="(val: boolean) => handleToggleEnabled(data, val)"
+                            :disabled="savingServiceId === data.serviceId"
+                        />
+                        <span v-if="savingServiceId === data.serviceId" class="saving-indicator">
+                            <i class="pi pi-spin pi-spinner"></i>
+                        </span>
+                    </div>
+                </template>
+            </Column>
             <Column header="Votes sichtbar" style="width: 150px">
                 <template #body="{ data }">
                     <div class="toggle-container">
                         <ToggleSwitch
                             :modelValue="data.votesVisible"
-                            @update:modelValue="(val: boolean) => handleToggle(data, val)"
+                            @update:modelValue="(val: boolean) => handleToggleVotes(data, val)"
                             :disabled="savingServiceId === data.serviceId"
                         />
                         <span v-if="savingServiceId === data.serviceId" class="saving-indicator">
