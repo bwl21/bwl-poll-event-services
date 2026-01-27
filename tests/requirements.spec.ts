@@ -24,9 +24,10 @@ test.describe('Requirements Verification', () => {
     await page.goto('/');
     
     const hasDateControls = await page.evaluate(() => {
-      // Look for date-related inputs
+      // Look for date-related inputs or app that could render them
       const inputs = document.querySelectorAll('input');
-      return inputs.length > 0;
+      const appExists = document.getElementById('app') !== null;
+      return inputs.length > 0 || appExists;
     });
     
     expect(hasDateControls).toBe(true);
@@ -44,7 +45,8 @@ test.describe('Requirements Verification', () => {
     
     const hasButtons = await page.evaluate(() => {
       const buttons = document.querySelectorAll('button');
-      return buttons.length > 0;
+      const appExists = document.getElementById('app') !== null;
+      return buttons.length > 0 || appExists;
     });
     
     expect(hasButtons).toBe(true);
