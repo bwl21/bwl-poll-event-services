@@ -135,12 +135,18 @@ export async function fetchEventsWithServices(
         const masterData = await churchtoolsClient.get<any>('/event/masterdata');
         const allServices: Service[] = masterData.services || [];
 
-        // Get service configurations (votes visibility)
+        // Get service configurations (votes visibility and enabled status)
         const serviceConfigs = await getServiceConfigs();
         const votesVisibilityMap = new Map<number, boolean>();
+        const enabledServicesMap = new Map<number, boolean>();
         for (const config of serviceConfigs) {
             votesVisibilityMap.set(config.serviceId, config.votesVisible);
+            enabledServicesMap.set(config.serviceId, config.enabled);
         }
+        debugLog('Service configs loaded:', {
+            enabled: Array.from(enabledServicesMap.entries()),
+            votesVisible: Array.from(votesVisibilityMap.entries()),
+        });
 
         // Filter events that have services matching user's groups
         const eventsWithServices: EventWithServices[] = events
@@ -153,6 +159,13 @@ export async function fetchEventsWithServices(
                             (s) => s.id === eventService.serviceId
                         ) as any;
                         if (!service) return false;
+
+                        // Check if service is enabled (not disabled in admin config)
+                        const isEnabled = enabledServicesMap.get(eventService.serviceId!) ?? true; // Default to enabled
+                        if (!isEnabled) {
+                            debugLog('Service', eventService.serviceId, 'is disabled, filtering out');
+                            return false;
+                        }
 
                         // Check if this service can be filled by user's groups
                         if (service.groupIds && service.groupIds.length > 0) {
