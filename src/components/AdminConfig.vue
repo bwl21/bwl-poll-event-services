@@ -201,7 +201,7 @@ onMounted(loadConfigs);
                     {{ data.serviceName || `Service ${data.serviceId}` }}
                 </template>
             </Column>
-            <Column header="Aktiv" style="width: 100px">
+            <Column field="enabled" header="Aktiv" sortable style="width: 100px">
                 <template #body="{ data }">
                     <div class="toggle-container">
                         <ToggleSwitch
@@ -215,7 +215,7 @@ onMounted(loadConfigs);
                     </div>
                 </template>
             </Column>
-            <Column header="Votes sichtbar" style="width: 150px">
+            <Column field="votesVisible" header="Votes sichtbar" sortable style="width: 150px">
                 <template #body="{ data }">
                     <div class="toggle-container">
                         <ToggleSwitch
