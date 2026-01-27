@@ -182,12 +182,17 @@ onMounted(loadConfigs);
                 placeholder="Service suchen (Name, Kategorie, ID)..."
                 class="filter-input"
             />
+            <p class="filter-hint">
+                💡 <strong>Mehrfach-Sortierung:</strong> Klick auf Spaltenkopf sortiert primär, Shift+Klick fügt weitere Sortierungen hinzu
+            </p>
         </div>
 
         <DataTable
             v-if="!loading && configs.length > 0"
             :value="filteredConfigs"
             stripedRows
+            sortMode="multiple"
+            removableSort
             class="p-datatable-sm"
         >
             <Column field="serviceId" header="Service ID" sortable style="width: 120px" />
@@ -299,6 +304,14 @@ onMounted(loadConfigs);
 
 .filter-input::placeholder {
     color: #999;
+}
+
+.filter-hint {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 8px;
+    margin-bottom: 0;
+    font-style: italic;
 }
 
 .toggle-container {
