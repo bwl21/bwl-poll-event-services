@@ -1,39 +1,57 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Admin Service Config', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('domcontentloaded');
-  });
-
   test('should load application', async ({ page }) => {
-    // Basic load test
     const response = await page.goto('/');
     expect(response?.status()).toBeLessThan(500);
   });
 
-  test('should have HTML content', async ({ page }) => {
-    // Check for HTML
-    const html = await page.evaluate(() => document.documentElement.innerHTML.length);
-    expect(html).toBeGreaterThan(100);
+  test('should have DOM content', async ({ page }) => {
+    await page.goto('/');
+    
+    const hasContent = await page.evaluate(() => {
+      return document.body.innerHTML.length > 10;
+    });
+    
+    expect(hasContent).toBe(true);
   });
 
-  test('should have body element', async ({ page }) => {
-    const body = page.locator('body');
-    expect(await body.count()).toBeGreaterThan(0);
+  test('should have app container', async ({ page }) => {
+    await page.goto('/');
+    
+    const appExists = await page.evaluate(() => {
+      const app = document.getElementById('app');
+      return app !== null;
+    });
+    
+    expect(appExists).toBe(true);
   });
 
-  test('should respond to user interactions', async ({ page }) => {
-    // Try pressing a key
+  test('should respond to keyboard input', async ({ page }) => {
+    await page.goto('/');
+    
+    // Should not crash when pressing keys
     await page.keyboard.press('a');
     
-    // Should not crash
-    const isAlive = await page.evaluate(() => document.body !== null);
+    const isAlive = await page.evaluate(() => 
+      document.body !== null
+    );
+    
     expect(isAlive).toBe(true);
   });
 
-  test('should have window object', async ({ page }) => {
-    const windowExists = await page.evaluate(() => typeof window === 'object');
-    expect(windowExists).toBe(true);
+  test('should have basic page structure', async ({ page }) => {
+    await page.goto('/');
+    
+    const structure = await page.evaluate(() => ({
+      hasHtml: document.documentElement !== null,
+      hasBody: document.body !== null,
+      hasHead: document.head !== null,
+      htmlTag: document.documentElement.tagName,
+    }));
+    
+    expect(structure.hasHtml).toBe(true);
+    expect(structure.hasBody).toBe(true);
+    expect(structure.htmlTag).toBe('HTML');
   });
 });

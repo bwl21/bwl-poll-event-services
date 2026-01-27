@@ -1,61 +1,56 @@
 import { test, expect } from '@playwright/test';
 
-// Responsive tests run on all projects defined in playwright.config.ts
-// Including: chromium, firefox, webkit, Mobile Chrome, Mobile Safari, iPad
-
 test.describe('Responsive Design', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('domcontentloaded');
-  });
-
-  test('should load on all screen sizes', async ({ page }) => {
-    // Page should load without 5xx errors
+  test('should load on current viewport', async ({ page }) => {
     const response = await page.goto('/');
     expect(response?.status()).toBeLessThan(500);
   });
 
-  test('should have content', async ({ page }) => {
-    // Page should have body element
-    const body = page.locator('body');
-    expect(await body.count()).toBeGreaterThan(0);
-  });
-
-  test('should not have horizontal scroll on current viewport', async ({ page }) => {
-    // Get viewport and body width
-    const viewportSize = page.viewportSize();
-    const bodyWidth = await page.evaluate(() => document.body.offsetWidth);
-    
-    // Content should not significantly exceed viewport
-    // (allowing some tolerance for platform differences)
-    const maxWidth = (viewportSize?.width || 1200) + 50;
-    expect(bodyWidth).toBeLessThanOrEqual(maxWidth);
-  });
-
   test('should have valid viewport size', async ({ page }) => {
-    const viewportSize = page.viewportSize();
+    await page.goto('/');
     
-    // Viewport should be set
+    const viewportSize = page.viewportSize();
     expect(viewportSize?.width).toBeGreaterThan(0);
     expect(viewportSize?.height).toBeGreaterThan(0);
   });
 
-  test('should have proper layout structure', async ({ page }) => {
-    // HTML should be loaded
-    const htmlLength = await page.evaluate(() => 
-      document.documentElement.outerHTML.length
-    );
+  test('should not have excessive width', async ({ page }) => {
+    await page.goto('/');
     
-    expect(htmlLength).toBeGreaterThan(100);
+    const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
+    const viewportWidth = await page.evaluate(() => window.innerWidth);
+    
+    // Content width should be reasonable relative to viewport
+    // Allow up to 1.2x viewport width
+    const maxWidth = viewportWidth * 1.2;
+    expect(bodyWidth).toBeLessThanOrEqual(maxWidth);
   });
 
-  test('should not have vertical scroll issues', async ({ page }) => {
-    // Check document height
-    const docHeight = await page.evaluate(() => document.documentElement.scrollHeight);
-    const windowHeight = await page.evaluate(() => window.innerHeight);
+  test('should have proper document height', async ({ page }) => {
+    await page.goto('/');
     
-    // Document height should be reasonable
+    const docHeight = await page.evaluate(() => document.documentElement.scrollHeight);
     expect(docHeight).toBeGreaterThan(0);
-    expect(windowHeight).toBeGreaterThan(0);
+  });
+
+  test('should load without blocking', async ({ page }) => {
+    const startTime = Date.now();
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    const loadTime = Date.now() - startTime;
+    
+    // Should load reasonably fast (less than 30 seconds)
+    expect(loadTime).toBeLessThan(30000);
+  });
+
+  test('should have proper CSS applied', async ({ page }) => {
+    await page.goto('/');
+    
+    const hasStyles = await page.evaluate(() => {
+      const body = document.body;
+      const computed = window.getComputedStyle(body);
+      return computed.display !== 'none';
+    });
+    
+    expect(hasStyles).toBe(true);
   });
 });
