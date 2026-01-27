@@ -3,8 +3,8 @@ import PrimeVue from 'primevue/config';
 import ToastService from 'primevue/toastservice';
 import Tooltip from 'primevue/tooltip';
 import Aura from '@primeuix/themes/aura';
-// Load primeicons CSS (includes all font formats)
-import 'primeicons/primeicons.css';
+// Load primeicons subset (only woff2 for modern browsers)
+import './primeicons.css';
 
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import App from './App.vue';

@@ -22,6 +22,15 @@ export default ({ mode }) => {
         define: {
             __APP_VERSION__: JSON.stringify(pkg.version),
         },
+        build: {
+            rollupOptions: {
+                output: {
+                    manualChunks: {
+                        primevue: ['primevue/config', 'primevue/button', 'primevue/datatable'],
+                    },
+                },
+            },
+        },
         server: {
             host: true,
             allowedHosts: true,
