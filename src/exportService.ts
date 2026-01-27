@@ -1,12 +1,26 @@
 /**
  * Excel export functionality for poll responses
+ * 
+ * ⚠️ SECURITY NOTE: xlsx library (v0.18.5) has known vulnerabilities:
+ *   - Prototype Pollution (GHSA-4r6h-8v6p-xvw6)
+ *   - ReDoS in regular expressions (GHSA-5pgg-2g8v-p4x9)
+ * 
+ * Status: No patched version available (as of 2026-01-27)
+ * Risk: MEDIUM (data comes from trusted ChurchTools source)
+ * Mitigation: Data is from internal ChurchTools system, not user-supplied
+ * 
+ * TODO: Monitor for xlsx 0.20.2+ or consider migration to exceljs
+ * See: https://github.com/sheetjs/sheetjs/issues/
  */
 import * as XLSX from 'xlsx';
 import type { EventWithServices, ServicePollEntry } from './types';
+import { prepareResponseRows, formatResponse, formatTimestamp } from './pollService';
 
 interface ExportRow {
     'Event': string;
+    'Wochentag': string;
     'Datum': string;
+    'Uhrzeit': string;
     'Dienst': string;
     'Besetzung': string;
     'Benutzer': string;
@@ -15,95 +29,29 @@ interface ExportRow {
     'Zeitstempel': string;
 }
 
-function formatResponse(response: string | null): string {
-    switch (response) {
-        case 'yes':
-            return 'Ja';
-        case 'maybe':
-            return 'Vielleicht';
-        case 'no':
-            return 'Nein';
-        default:
-            return '-';
-    }
-}
-
-function formatDate(dateStr: string): string {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('de-DE', {
-        weekday: 'short',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
-}
-
-function formatTimestamp(timestamp: string): string {
-    const date = new Date(timestamp);
-    return date.toLocaleString('de-DE');
-}
-
 export function exportToExcel(
     events: EventWithServices[],
     responses: ServicePollEntry[]
 ): void {
-    const rows: ExportRow[] = [];
+    // Use shared data preparation logic
+    const preparedRows = prepareResponseRows(events, responses, true); // includeEmpty = true for Excel
 
-    // Create a map for quick lookup
-    const responseMap = new Map<string, ServicePollEntry[]>();
-    for (const response of responses) {
-        const key = `${response.eventId}-${response.serviceId}`;
-        if (!responseMap.has(key)) {
-            responseMap.set(key, []);
-        }
-        responseMap.get(key)!.push(response);
-    }
-
-    // Build export rows
-    for (const event of events) {
-        for (const service of event.services) {
-            const serviceResponses = responseMap.get(`${event.id}-${service.id}`) || [];
-            
-            // Format assignment info
-            let assignmentText = '';
-            if ((service as any).assignments && (service as any).assignments.length > 0) {
-                const assignment = (service as any).assignments[0];
-                assignmentText = assignment.isConfirmed ? assignment.personName : `${assignment.personName} (angefordert)`;
-            }
-
-            if (serviceResponses.length === 0) {
-                // Add row even if no responses
-                rows.push({
-                    'Event': event.name,
-                    'Datum': formatDate(event.startDate),
-                    'Dienst': service.name,
-                    'Besetzung': assignmentText,
-                    'Benutzer': '-',
-                    'Antwort': '-',
-                    'Kommentar': '',
-                    'Zeitstempel': '',
-                });
-            } else {
-                for (const response of serviceResponses) {
-                    rows.push({
-                        'Event': event.name,
-                        'Datum': formatDate(event.startDate),
-                        'Dienst': service.name,
-                        'Besetzung': assignmentText,
-                        'Benutzer': response.userName || `User ${response.userId}`,
-                        'Antwort': formatResponse(response.response),
-                        'Kommentar': response.comment || '',
-                        'Zeitstempel': formatTimestamp(response.timestamp),
-                    });
-                }
-            }
-        }
-    }
+    // Convert to Excel format
+    const rows: ExportRow[] = preparedRows.map(row => ({
+        'Event': row.eventName,
+        'Wochentag': row.weekday,
+        'Datum': row.date,
+        'Uhrzeit': row.time,
+        'Dienst': row.serviceName,
+        'Besetzung': row.assignment,
+        'Benutzer': row.userName,
+        'Antwort': formatResponse(row.response),
+        'Kommentar': row.comment,
+        'Zeitstempel': row.timestamp ? formatTimestamp(row.timestamp) : '',
+    }));
 
     // Create workbook and worksheet with column order
-    const columnOrder = ['Event', 'Datum', 'Dienst', 'Besetzung', 'Benutzer', 'Antwort', 'Kommentar', 'Zeitstempel'];
+    const columnOrder = ['Event', 'Wochentag', 'Datum', 'Uhrzeit', 'Dienst', 'Besetzung', 'Benutzer', 'Antwort', 'Kommentar', 'Zeitstempel'];
     const worksheet = XLSX.utils.json_to_sheet(rows, { header: columnOrder });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Umfrage-Antworten');
@@ -111,7 +59,9 @@ export function exportToExcel(
     // Set column widths
     worksheet['!cols'] = [
         { wch: 25 }, // Event
-        { wch: 20 }, // Datum
+        { wch: 12 }, // Wochentag
+        { wch: 12 }, // Datum
+        { wch: 10 }, // Uhrzeit
         { wch: 20 }, // Dienst
         { wch: 25 }, // Besetzung
         { wch: 20 }, // Benutzer

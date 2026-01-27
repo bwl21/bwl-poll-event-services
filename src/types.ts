@@ -35,6 +35,7 @@ export interface ServiceInfo {
     sortKey?: number;
     isValid?: boolean;
     assignments?: ServiceAssignment[];
+    votesVisible?: boolean;
 }
 
 export interface ServiceAssignment {
@@ -46,6 +47,23 @@ export interface ServiceAssignment {
 export interface UserInfo {
     id: number;
     name: string;
+}
+
+export interface PreparedResponseRow {
+    eventName: string;
+    weekday: string;
+    date: string;
+    time: string;
+    serviceName: string;
+    assignment: string;
+    userName: string;
+    response: string | null;
+    comment: string;
+    timestamp: string;
+    // Original data for deletion/reference
+    eventId: number;
+    serviceId: number;
+    userId: number;
 }
 
 export interface PollConfig {
@@ -61,4 +79,5 @@ export interface AdminServiceConfig {
     serviceId: number;
     serviceName?: string;
     votesVisible: boolean;
+    enabled: boolean; // Whether the service should be displayed in polls
 }

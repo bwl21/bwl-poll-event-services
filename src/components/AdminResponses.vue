@@ -4,65 +4,39 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
-import { useToast } from 'primevue/usetoast';
-import type { ServicePollEntry } from '../types';
-import { deleteResponse } from '../pollService';
-
-// Debug logging controlled by ?debug URL parameter
-const DEBUG = new URLSearchParams(window.location.search).has('debug');
-
-function debugLog(...args: any[]): void {
-    if (DEBUG) {
-        console.log('[ADMIN-RESPONSES DEBUG]', ...args);
-    }
-}
+import ToggleSwitch from 'primevue/toggleswitch';
+import type { ServicePollEntry, EventWithServices } from '../types';
+import { deleteResponse, prepareResponseRows, formatResponse, formatTimestamp } from '../pollService';
 
 const props = defineProps<{
     responses: ServicePollEntry[];
+    events: EventWithServices[];
 }>();
 
 const emit = defineEmits<{
     (e: 'response-deleted', entry: ServicePollEntry): void;
 }>();
 
-const toast = useToast();
 const deleteDialogVisible = ref(false);
-const selectedResponse = ref<ServicePollEntry | null>(null);
+const selectedResponse = ref<any | null>(null);
 const deleting = ref(false);
+const showEmptyServices = ref(true);
 
-const sortedResponses = computed(() => {
-    return [...props.responses].sort((a, b) => {
-        // Sort by timestamp descending (newest first)
-        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-    });
+// Use shared data preparation logic (same as Excel export)
+const allRows = computed(() => {
+    return prepareResponseRows(props.events, props.responses, showEmptyServices.value);
 });
 
-function formatResponse(response: string | null): string {
-    switch (response) {
-        case 'yes':
-            return 'Ja';
-        case 'maybe':
-            return 'Vielleicht';
-        case 'no':
-            return 'Nein';
-        default:
-            return '-';
-    }
-}
-
-function formatTimestamp(timestamp: string): string {
-    const date = new Date(timestamp);
-    return date.toLocaleString('de-DE', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
-}
-
-function confirmDelete(response: ServicePollEntry) {
-    selectedResponse.value = response;
+function confirmDelete(row: import('../types').PreparedResponseRow) {
+    selectedResponse.value = {
+        eventId: row.eventId,
+        serviceId: row.serviceId,
+        userId: row.userId,
+        userName: row.userName,
+        response: row.response,
+        comment: row.comment,
+        timestamp: row.timestamp,
+    };
     deleteDialogVisible.value = true;
 }
 
@@ -76,22 +50,9 @@ async function handleDelete() {
             selectedResponse.value.serviceId,
             selectedResponse.value.userId
         );
-        debugLog('Deleted response:', selectedResponse.value);
         emit('response-deleted', selectedResponse.value);
-        toast.add({
-            severity: 'success',
-            summary: 'Gelöscht',
-            detail: 'Antwort wurde erfolgreich gelöscht',
-            life: 3000,
-        });
     } catch (error) {
         console.error('Error deleting response:', error);
-        toast.add({
-            severity: 'error',
-            summary: 'Fehler',
-            detail: 'Antwort konnte nicht gelöscht werden',
-            life: 5000,
-        });
     } finally {
         deleting.value = false;
         deleteDialogVisible.value = false;
@@ -102,78 +63,83 @@ async function handleDelete() {
 
 <template>
     <div class="admin-responses">
-        <DataTable
-            :value="sortedResponses"
-            paginator
-            :rows="10"
-            :rowsPerPageOptions="[5, 10, 20, 50]"
+        <div class="toggle-container">
+            <label for="showEmpty">Leere Services anzeigen</label>
+            <ToggleSwitch id="showEmpty" v-model="showEmptyServices" />
+        </div>
+        
+        <DataTable 
+            :value="allRows" 
+            paginator 
+            :rows="50" 
+            :rowsPerPageOptions="[10, 25, 50, 100]"
+            sortMode="multiple"
+            removableSort
             stripedRows
-            class="p-datatable-sm"
+            size="small"
+            :emptyMessage="'Keine Antworten gefunden.'"
         >
-            <Column field="eventId" header="Event ID" sortable style="width: 100px" />
-            <Column field="serviceId" header="Service ID" sortable style="width: 100px" />
-            <Column field="userName" header="Benutzer" sortable style="min-width: 150px">
-                <template #body="{ data }">
-                    {{ data.userName || `User ${data.userId}` }}
+            <Column field="eventName" header="Event" sortable></Column>
+            <Column field="weekday" header="Wochentag" sortable></Column>
+            <Column field="date" header="Datum" sortable></Column>
+            <Column field="time" header="Uhrzeit" sortable></Column>
+            <Column field="serviceName" header="Dienst" sortable></Column>
+            <Column field="assignment" header="Besetzung" sortable>
+                <template #body="slotProps">
+                    {{ slotProps.data.assignment || '-' }}
                 </template>
             </Column>
-            <Column field="response" header="Antwort" sortable style="width: 120px">
-                <template #body="{ data }">
-                    <span :class="['response-badge', `response-${data.response || 'none'}`]">
-                        {{ formatResponse(data.response) }}
-                    </span>
+            <Column field="userName" header="Benutzer" sortable></Column>
+            <Column field="response" header="Antwort" sortable>
+                <template #body="slotProps">
+                    {{ formatResponse(slotProps.data.response) }}
                 </template>
             </Column>
-            <Column field="comment" header="Kommentar" style="min-width: 200px">
-                <template #body="{ data }">
-                    {{ data.comment || '-' }}
+            <Column field="comment" header="Kommentar">
+                <template #body="slotProps">
+                    {{ slotProps.data.comment || '-' }}
                 </template>
             </Column>
-            <Column field="timestamp" header="Zeitstempel" sortable style="width: 160px">
-                <template #body="{ data }">
-                    {{ formatTimestamp(data.timestamp) }}
+            <Column field="timestamp" header="Zeitstempel" sortable>
+                <template #body="slotProps">
+                    {{ formatTimestamp(slotProps.data.timestamp) }}
                 </template>
             </Column>
-            <Column header="Aktionen" style="width: 100px">
-                <template #body="{ data }">
-                    <Button
-                        icon="pi pi-trash"
-                        severity="danger"
-                        text
-                        rounded
-                        @click="confirmDelete(data)"
+            <Column header="Aktionen">
+                <template #body="slotProps">
+                    <Button 
+                        icon="pi pi-trash" 
+                        severity="danger" 
+                        text 
+                        size="small"
+                        @click="confirmDelete(slotProps.data)"
                         title="Antwort löschen"
                     />
                 </template>
             </Column>
         </DataTable>
 
-        <Dialog
-            v-model:visible="deleteDialogVisible"
-            header="Antwort löschen"
-            :modal="true"
-            :closable="!deleting"
-            :style="{ width: '400px' }"
+        <Dialog 
+            v-model:visible="deleteDialogVisible" 
+            modal 
+            header="Antwort löschen" 
+            :style="{ width: '30rem' }"
         >
-            <div class="confirmation-content">
-                <i class="pi pi-exclamation-triangle" style="font-size: 2rem; color: var(--p-orange-500)"></i>
-                <p>
-                    Möchten Sie die Antwort von
-                    <strong>{{ selectedResponse?.userName || `User ${selectedResponse?.userId}` }}</strong>
-                    wirklich löschen?
-                </p>
-            </div>
+            <p>
+                Möchten Sie die Antwort von
+                <strong>{{ selectedResponse?.userName || `User ${selectedResponse?.userId}` }}</strong>
+                wirklich löschen?
+            </p>
             <template #footer>
-                <Button
-                    label="Abbrechen"
-                    severity="secondary"
+                <Button 
+                    label="Abbrechen" 
+                    text 
                     @click="deleteDialogVisible = false"
                     :disabled="deleting"
                 />
-                <Button
-                    label="Löschen"
-                    severity="danger"
-                    icon="pi pi-trash"
+                <Button 
+                    label="Löschen" 
+                    severity="danger" 
                     @click="handleDelete"
                     :loading="deleting"
                 />
@@ -183,44 +149,19 @@ async function handleDelete() {
 </template>
 
 <style scoped>
-.admin-responses {
-    padding: 16px 0;
-}
-
-.response-badge {
-    padding: 4px 12px;
-    border-radius: 4px;
-    font-size: 0.875rem;
-    font-weight: 500;
-}
-
-.response-yes {
-    background-color: #d4edda;
-    color: #155724;
-}
-
-.response-maybe {
-    background-color: #fff3cd;
-    color: #856404;
-}
-
-.response-no {
-    background-color: #f8d7da;
-    color: #721c24;
-}
-
-.response-none {
-    background-color: #e9ecef;
-    color: #6c757d;
-}
-
-.confirmation-content {
+.toggle-container {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 4px;
 }
 
-.confirmation-content p {
+.toggle-container label {
+    font-size: 0.875rem;
+    color: #666;
     margin: 0;
 }
 </style>

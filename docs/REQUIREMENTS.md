@@ -191,20 +191,54 @@ Der Algorithmus bestimmt, welche Services dem Benutzer zur Umfrage angezeigt wer
 Die Anwendung ist in mehrere Module aufgeteilt:
 
 1. **types.ts**: TypeScript-Typdefinitionen
-2. **pollService.ts**: Business-Logik für Event-Abruf und Datenspeicherung
-3. **ui.ts**: UI-Rendering und Benutzerinteraktionen
-4. **main.ts**: Haupteinstiegspunkt der Anwendung
+2. **pollService.ts**: Business-Logik für Event-Abruf, Datenspeicherung und Admin-Funktionen
+3. **App.vue**: Haupt-Komponente mit TabView (Umfrage/Admin)
+4. **components/**:
+   - **EventCard.vue**: Darstellung eines Events mit seinen Services
+   - **ServiceRow.vue**: Darstellung eines einzelnen Services mit Antwortoptionen
+   - **AdminPanel.vue**: Admin-Bereich mit verschachtelter TabView
+   - **AdminResponses.vue**: Verwaltung aller Umfrageantworten
+   - **AdminConfig.vue**: Service-Konfiguration (Sichtbarkeit, Masterdata-Sync)
+5. **exportService.ts**: Excel-Export-Funktionalität
+6. **main.ts**: Haupteinstiegspunkt der Anwendung
+
+### UI-Struktur:
+```
+App.vue (TabView)
+├── Tab: Umfrage
+│   ├── Zeitraum-Einstellungen (Datepicker, Tage)
+│   ├── Excel Export Button
+│   └── EventCard (für jedes Event)
+│       └── ServiceRow (für jeden Service)
+│           ├── Antwort-Buttons (Ja/Vielleicht/Nein)
+│           ├── Kommentarfeld
+│           └── Anzeige anderer Antworten
+└── Tab: Admin (nur für Admins)
+    └── AdminPanel (TabView)
+        ├── Tab: Responses
+        │   └── AdminResponses (Tabelle mit allen Antworten)
+        ├── Tab: Service Config
+        │   └── AdminConfig (Tabelle mit allen Services)
+        └── Tab: Export
+            └── Export-Statistik und Button
+```
 
 ### API-Endpunkte
 Die Erweiterung nutzt folgende ChurchTools-API-Endpunkte:
 
 - `GET /events?from={date}&to={date}&include=eventServices` - Events mit Diensten abrufen
 - `GET /whoami` - Aktuellen Benutzer abrufen
-- `GET /persons/{personId}/groupmemberships` - Gruppenzugehörigkeiten abrufen
-- `GET /events/masterdata` - Dienste und Dienst-Gruppen abrufen
-- ChurchTools Key-Value-Store API für Datenpersistierung
-
-### Abhängigkeiten
+- `GET /persons/{personId}/groups` - Gruppenzugehörigkeiten abrufen
+- `GET /event/masterdata` - Dienste und Dienst-Gruppen (Service Groups) abrufen
+- `GET /calendars/appointments?calendar_ids[]={id}&from={date}&to={date}&include[]=bookings` - Ressourcen-Buchungen für Events
+- ChurchTools Key-Value-Store API für Datenpersistierung:
+  - Kategorie `poll-responses`: Umfrageantworten
+  - Kategorie `admin-config`: Admin-Konfiguration (Service-Sichtbarkeit)
+ue`: ^3.5.13 - Vue.js Framework
+- `primevue`: ^4.4.0 - PrimeVue UI-Komponenten
+- `vite`: ^7.1.2 - Build-Tool
+- `typescript`: ^5.9.2 - TypeScript-Compiler
+- `exceljs`: ^4.4.0 - Excel-Export-Bibliothek
 - `@churchtools/churchtools-client`: ^1.4.0 - ChurchTools API-Client
 - `vite`: ^7.1.2 - Build-Tool
 - `typescript`: ^5.9.2 - TypeScript-Compiler
@@ -245,7 +279,38 @@ Benutzer können nur Events und Dienste sehen, für die sie aufgrund ihrer Grupp
   - Kommentar
   - Zeitstempel
 - Ermöglicht dem Disponenten die Auswertung und Planung außerhalb der Extension
-- Später: Integration mit separater Disponenten-Extension
+
+### 7. Admin-Funktionen
+Die Extension bietet einen separaten Admin-Bereich für berechtigte Benutzer:
+
+#### Admin-Berechtigung:
+- Ein Benutzer ist Admin, wenn er Lesezugriff auf die KV-Store Kategorie "admin-config" hat
+- Berechtigungen werden über das ChurchTools-Berechtigungssystem verwaltet
+- Admin-Badge wird im Header angezeigt
+
+#### Admin-Oberfläche:
+- Separater Tab "Admin" (nur für Admins sichtbar)
+- Verschachtelte TabView mit drei Unterbereichen:
+  1. **Responses**: Übersicht aller Umfrageantworten
+     - Tabellarische Darstellung aller Responses
+     - Sortier- und Filterfunktionen
+     - Löschfunktion für einzelne Antworten
+  2. **Service Config**: Konfiguration der Dienste
+     - Anzeige ALLER Services aus ChurchTools Masterdata
+     - Service-Namen und Kategorien (Service Groups) aus Masterdata
+     - Spalten: Service ID, Kategorie, Service Name, Votes sichtbar
+     - Toggle für Sichtbarkeit der Votes pro Service
+     - Sortierung nach Kategorie, dann Service-Name
+  3. **Export**: Excel-Export aller Antworten
+     - Statistik (Anzahl Antworten, Anzahl Events)
+     - Export-Button für alle Responses
+
+#### Service-Konfiguration:
+- Alle Services werden aus den Event-Masterdata geladen
+- Service-Namen und zugehörige Kategorien (Service Groups) werden automatisch synchronisiert
+- Admin kann für jeden Service die Sichtbarkeit der Votes konfigurieren
+- Konfiguration wird im KV-Store Kategorie "admin-config" gespeichert
 
 ## Zukünftige Erweiterungen (Optional)
 - Filtermöglichkeiten (z.B. nur Events einer bestimmten Gruppe)
+- Integration mit separater Disponenten-Extension

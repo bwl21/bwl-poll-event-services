@@ -135,6 +135,19 @@ export async function fetchEventsWithServices(
         const masterData = await churchtoolsClient.get<any>('/event/masterdata');
         const allServices: Service[] = masterData.services || [];
 
+        // Get service configurations (votes visibility and enabled status)
+        const serviceConfigs = await getServiceConfigs();
+        const votesVisibilityMap = new Map<number, boolean>();
+        const enabledServicesMap = new Map<number, boolean>();
+        for (const config of serviceConfigs) {
+            votesVisibilityMap.set(config.serviceId, config.votesVisible);
+            enabledServicesMap.set(config.serviceId, config.enabled);
+        }
+        debugLog('Service configs loaded:', {
+            enabled: Array.from(enabledServicesMap.entries()),
+            votesVisible: Array.from(votesVisibilityMap.entries()),
+        });
+
         // Filter events that have services matching user's groups
         const eventsWithServices: EventWithServices[] = events
             .filter((event) => event.eventServices && event.eventServices.length > 0)
@@ -146,6 +159,13 @@ export async function fetchEventsWithServices(
                             (s) => s.id === eventService.serviceId
                         ) as any;
                         if (!service) return false;
+
+                        // Check if service is enabled (not disabled in admin config)
+                        const isEnabled = enabledServicesMap.get(eventService.serviceId!) ?? true; // Default to enabled
+                        if (!isEnabled) {
+                            debugLog('Service', eventService.serviceId, 'is disabled, filtering out');
+                            return false;
+                        }
 
                         // Check if this service can be filled by user's groups
                         if (service.groupIds && service.groupIds.length > 0) {
@@ -191,6 +211,7 @@ export async function fetchEventsWithServices(
                             sortKey: serviceDef?.sortKey,
                             isValid: eventService.isValid,
                             assignments,
+                            votesVisible: votesVisibilityMap.get(eventService.serviceId!) ?? true, // Default to visible
                         };
                     });
 
@@ -469,8 +490,13 @@ export async function getServiceConfigs(): Promise<AdminServiceConfig[]> {
             module.id
         );
 
-        // Filter only service config entries (not permission entries)
-        return values.filter((v) => v.type === 'service-config' || v.serviceId !== undefined);
+        // Filter only service config entries and set defaults for missing fields
+        return values
+            .filter((v) => v.type === 'service-config' || v.serviceId !== undefined)
+            .map((v) => ({
+                ...v,
+                enabled: v.enabled ?? true, // Default to enabled for backward compatibility
+            }));
     } catch (error) {
         console.error('Error loading service configs:', error);
         return [];
@@ -483,7 +509,8 @@ export async function getServiceConfigs(): Promise<AdminServiceConfig[]> {
 export async function updateServiceConfig(
     serviceId: number,
     votesVisible: boolean,
-    serviceName?: string
+    serviceName?: string,
+    enabled: boolean = true
 ): Promise<void> {
     try {
         const category = await getAdminConfigCategory();
@@ -510,6 +537,7 @@ export async function updateServiceConfig(
             serviceId,
             serviceName,
             votesVisible,
+            enabled,
         };
 
         if (existing && existing.id) {
@@ -582,22 +610,26 @@ export async function deleteResponse(
 }
 
 /**
- * Get all unique services from all responses (for admin config)
+ * Get all services from masterdata (for admin config)
  */
-export async function getAllServicesFromResponses(): Promise<{ serviceId: number; serviceName: string }[]> {
-    const responses = await loadAllPollResponses();
-    const serviceMap = new Map<number, string>();
-
-    for (const response of responses) {
-        if (!serviceMap.has(response.serviceId)) {
-            serviceMap.set(response.serviceId, `Service ${response.serviceId}`);
-        }
-    }
-
-    return Array.from(serviceMap.entries()).map(([serviceId, serviceName]) => ({
-        serviceId,
-        serviceName,
-    }));
+export async function getAllServicesFromResponses(): Promise<{ serviceId: number; serviceName: string; categoryName?: string }[]> {
+    // Get all services from masterdata
+    const masterData = await churchtoolsClient.get<any>('/event/masterdata');
+    const allServices: Service[] = masterData.services || [];
+    const serviceGroups = masterData.serviceGroups || [];
+    
+    return allServices.map(service => {
+        const serviceGroup = serviceGroups.find((sg: any) => sg.id === (service as any).serviceGroupId);
+        return {
+            serviceId: service.id!,
+            serviceName: service.name || `Service ${service.id}`,
+            categoryName: serviceGroup?.name || undefined,
+        };
+    }).sort((a, b) => {
+        // Sort by category first, then by service name
+        const catCompare = (a.categoryName || '').localeCompare(b.categoryName || '');
+        return catCompare !== 0 ? catCompare : a.serviceName.localeCompare(b.serviceName);
+    });
 }
 
 /**
@@ -608,4 +640,158 @@ export function resetAdminCache(): void {
     debugLog('Admin cache reset');
 }
 
+/**
+ * Format response value for display
+ */
+export function formatResponse(response: string | null): string {
+    switch (response) {
+        case 'yes':
+            return 'Ja';
+        case 'maybe':
+            return 'Vielleicht';
+        case 'no':
+            return 'Nein';
+        default:
+            return '-';
+    }
+}
 
+/**
+ * Format weekday from date string
+ */
+export function formatWeekday(dateStr: string): string {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('de-DE', {
+        weekday: 'long',
+    });
+}
+
+/**
+ * Format date only (no time)
+ */
+export function formatDateOnly(dateStr: string): string {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('de-DE', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    });
+}
+
+/**
+ * Format time only (no date)
+ */
+export function formatTime(dateStr: string): string {
+    const date = new Date(dateStr);
+    return date.toLocaleTimeString('de-DE', {
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
+/**
+ * Format timestamp
+ */
+export function formatTimestamp(timestamp: string): string {
+    const date = new Date(timestamp);
+    return date.toLocaleString('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
+/**
+ * Prepare response rows for display (shared logic for Excel export and Admin table)
+ */
+export function prepareResponseRows(
+    events: EventWithServices[],
+    responses: ServicePollEntry[],
+    includeEmpty: boolean = false
+): import('./types').PreparedResponseRow[] {
+    const rows: import('./types').PreparedResponseRow[] = [];
+    
+    console.log('[prepareResponseRows] Called with:', {
+        eventsCount: events.length,
+        responsesCount: responses.length,
+        includeEmpty,
+        firstEvent: events[0] ? { id: events[0].id, name: events[0].name, servicesCount: events[0].services.length } : null
+    });
+    
+    // Create a map for quick lookup
+    const responseMap = new Map<string, ServicePollEntry[]>();
+    for (const response of responses) {
+        const key = `${response.eventId}-${response.serviceId}`;
+        if (!responseMap.has(key)) {
+            responseMap.set(key, []);
+        }
+        responseMap.get(key)!.push(response);
+    }
+
+    // Build display rows
+    for (const event of events) {
+        console.log('[prepareResponseRows] Processing event:', event.id, event.name, 'services:', event.services.length);
+        for (const service of event.services) {
+            const serviceResponses = responseMap.get(`${event.id}-${service.id}`) || [];
+            
+            console.log('[prepareResponseRows] Event', event.id, 'Service', service.id, service.name, '- responses:', serviceResponses.length);
+            
+            // Format assignment info
+            let assignmentText = '';
+            if ((service as any).assignments && (service as any).assignments.length > 0) {
+                const assignment = (service as any).assignments[0];
+                assignmentText = assignment.isConfirmed 
+                    ? assignment.personName 
+                    : `${assignment.personName} (angefordert)`;
+            }
+
+            if (serviceResponses.length === 0) {
+                if (includeEmpty) {
+                    // Add row even if no responses (for Excel export)
+                    rows.push({
+                        eventName: event.name,
+                        weekday: formatWeekday(event.startDate),
+                        date: formatDateOnly(event.startDate),
+                        time: formatTime(event.startDate),
+                        serviceName: service.name,
+                        assignment: assignmentText,
+                        userName: '-',
+                        response: null,
+                        comment: '',
+                        timestamp: '',
+                        eventId: event.id,
+                        serviceId: service.id,
+                        userId: 0,
+                    });
+                }
+            } else {
+                for (const response of serviceResponses) {
+                    rows.push({
+                        eventName: event.name,
+                        weekday: formatWeekday(event.startDate),
+                        date: formatDateOnly(event.startDate),
+                        time: formatTime(event.startDate),
+                        serviceName: service.name,
+                        assignment: assignmentText,
+                        userName: response.userName || `User ${response.userId}`,
+                        response: response.response,
+                        comment: response.comment || '',
+                        timestamp: response.timestamp,
+                        eventId: response.eventId,
+                        serviceId: response.serviceId,
+                        userId: response.userId,
+                    });
+                }
+            }
+        }
+    }
+    
+    console.log('[prepareResponseRows] Prepared', rows.length, 'rows');
+    if (rows.length < 10) {
+        console.log('[prepareResponseRows] Sample rows:', rows);
+    }
+
+    return rows;
+}

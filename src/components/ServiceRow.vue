@@ -94,7 +94,7 @@ async function saveResponse() {
     try {
         await savePollResponse(
             props.eventId,
-            props.service.id,
+            props.service.serviceId,
             selectedResponse.value,
             comment.value
         );
@@ -220,28 +220,34 @@ const allComments = computed(() => {
             />
         </td>
         <td class="other-responses">
-            <div v-if="yesResponses.length" class="response-group yes">
-                <i class="pi pi-check"></i>
-                <span>{{ formatResponseList(yesResponses) }}</span>
+            <div v-if="!service.votesVisible" class="votes-hidden-message">
+                <i class="pi pi-eye-slash"></i>
+                <span>Votes verborgen</span>
             </div>
-            <div v-if="maybeResponses.length" class="response-group maybe">
-                <i class="pi pi-question"></i>
-                <span>{{ formatResponseList(maybeResponses) }}</span>
-            </div>
-            <div v-if="noResponses.length" class="response-group no">
-                <i class="pi pi-times"></i>
-                <span>{{ formatResponseList(noResponses) }}</span>
-            </div>
-            <div v-for="c in allComments" :key="c.name" class="other-comment">
-                <i class="pi pi-comment"></i>
-                <span>{{ c.name }}: "{{ c.comment }}"</span>
-            </div>
-            <div
-                v-if="!yesResponses.length && !maybeResponses.length && !noResponses.length"
-                class="no-responses"
-            >
-                -
-            </div>
+            <template v-else>
+                <div v-if="yesResponses.length" class="response-group yes">
+                    <i class="pi pi-check"></i>
+                    <span>{{ formatResponseList(yesResponses) }}</span>
+                </div>
+                <div v-if="maybeResponses.length" class="response-group maybe">
+                    <i class="pi pi-question"></i>
+                    <span>{{ formatResponseList(maybeResponses) }}</span>
+                </div>
+                <div v-if="noResponses.length" class="response-group no">
+                    <i class="pi pi-times"></i>
+                    <span>{{ formatResponseList(noResponses) }}</span>
+                </div>
+                <div v-for="c in allComments" :key="c.name" class="other-comment">
+                    <i class="pi pi-comment"></i>
+                    <span>{{ c.name }}: "{{ c.comment }}"</span>
+                </div>
+                <div
+                    v-if="!yesResponses.length && !maybeResponses.length && !noResponses.length"
+                    class="no-responses"
+                >
+                    -
+                </div>
+            </template>
         </td>
     </tr>
 
@@ -309,22 +315,28 @@ const allComments = computed(() => {
         </small>
 
         <div class="other-responses mobile">
-            <div v-if="yesResponses.length" class="response-group yes">
-                <i class="pi pi-check"></i>
-                {{ formatResponseList(yesResponses) }}
+            <div v-if="!service.votesVisible" class="votes-hidden-message">
+                <i class="pi pi-eye-slash"></i>
+                Votes verborgen
             </div>
-            <div v-if="maybeResponses.length" class="response-group maybe">
-                <i class="pi pi-question"></i>
-                {{ formatResponseList(maybeResponses) }}
-            </div>
-            <div v-if="noResponses.length" class="response-group no">
-                <i class="pi pi-times"></i>
-                {{ formatResponseList(noResponses) }}
-            </div>
-            <div v-for="c in allComments" :key="c.name" class="other-comment">
-                <i class="pi pi-comment"></i>
-                {{ c.name }}: "{{ c.comment }}"
-            </div>
+            <template v-else>
+                <div v-if="yesResponses.length" class="response-group yes">
+                    <i class="pi pi-check"></i>
+                    {{ formatResponseList(yesResponses) }}
+                </div>
+                <div v-if="maybeResponses.length" class="response-group maybe">
+                    <i class="pi pi-question"></i>
+                    {{ formatResponseList(maybeResponses) }}
+                </div>
+                <div v-if="noResponses.length" class="response-group no">
+                    <i class="pi pi-times"></i>
+                    {{ formatResponseList(noResponses) }}
+                </div>
+                <div v-for="c in allComments" :key="c.name" class="other-comment">
+                    <i class="pi pi-comment"></i>
+                    {{ c.name }}: "{{ c.comment }}"
+                </div>
+            </template>
         </div>
     </div>
 </template>
@@ -501,5 +513,18 @@ const allComments = computed(() => {
     margin-top: 12px;
     padding-top: 12px;
     border-top: 1px solid #e0e0e0;
+}
+
+.votes-hidden-message {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #999;
+    font-style: italic;
+    font-size: 0.875rem;
+}
+
+.votes-hidden-message i {
+    font-size: 0.875rem;
 }
 </style>

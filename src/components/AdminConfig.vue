@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import ToggleSwitch from 'primevue/toggleswitch';
@@ -23,54 +23,57 @@ const props = defineProps<{
 
 const toast = useToast();
 const loading = ref(true);
+const error = ref<string | null>(null);
 const configs = ref<(AdminServiceConfig & { categoryName?: string })[]>([]);
-const savingServiceId = ref<number | null>(null);
+const savingServiceIds = ref(new Set<number>()); // Prevent race conditions
+const filterText = ref('');
 
-// Build map of serviceId to categoryName from events
-function getServiceCategoryMap(): Map<number, string> {
-    const map = new Map<number, string>();
-    for (const event of props.events) {
-        for (const service of event.services) {
-            if (!map.has(service.serviceId)) {
-                // Find the calendar/event name as category
-                const categoryName = event.name || 'Event';
-                map.set(service.serviceId, categoryName);
-            }
-        }
+const filteredConfigs = computed(() => {
+    if (!filterText.value.trim()) {
+        return configs.value;
     }
-    return map;
-}
+    
+    const query = filterText.value.toLowerCase();
+    return configs.value.filter((config) => {
+        return (
+            (config.serviceName?.toLowerCase().includes(query) ?? false) ||
+            (config.categoryName?.toLowerCase().includes(query) ?? false) ||
+            config.serviceId.toString().includes(query)
+        );
+    });
+});
 
 async function loadConfigs() {
     loading.value = true;
+    error.value = null;
     try {
-        // Get all services that have responses
+        // Get all services from masterdata
         const services = await getAllServicesFromResponses();
         const existingConfigs = await getServiceConfigs();
-        const categoryMap = getServiceCategoryMap();
 
-        debugLog('Services with responses:', services);
+        debugLog('Services from masterdata:', services);
         debugLog('Existing configs:', existingConfigs);
-        debugLog('Service category map:', categoryMap);
 
         // Merge: create config entries for all services
         configs.value = services.map((service) => {
             const existingConfig = existingConfigs.find((c) => c.serviceId === service.serviceId);
-            const categoryName = categoryMap.get(service.serviceId) || 'Sonstige';
             return {
                 serviceId: service.serviceId,
-                serviceName: existingConfig?.serviceName || service.serviceName,
-                categoryName,
+                serviceName: service.serviceName,
+                categoryName: service.categoryName,
                 votesVisible: existingConfig?.votesVisible ?? true, // Default to visible
+                enabled: existingConfig?.enabled ?? true, // Default to enabled
                 id: existingConfig?.id,
             };
         });
-    } catch (error) {
-        console.error('Error loading configs:', error);
+    } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Unbekannter Fehler';
+        error.value = errorMsg;
+        debugLog('Error loading configs:', err);
         toast.add({
             severity: 'error',
-            summary: 'Fehler',
-            detail: 'Konfiguration konnte nicht geladen werden',
+            summary: 'Fehler beim Laden',
+            detail: `Konfiguration konnte nicht geladen werden: ${errorMsg}`,
             life: 5000,
         });
     } finally {
@@ -78,28 +81,71 @@ async function loadConfigs() {
     }
 }
 
-async function handleToggle(config: AdminServiceConfig, newValue: boolean) {
-    savingServiceId.value = config.serviceId;
+async function handleToggleVotes(config: AdminServiceConfig, newValue: boolean) {
+    // Prevent double-toggling (race condition)
+    if (savingServiceIds.value.has(config.serviceId)) {
+        return;
+    }
+    
+    savingServiceIds.value.add(config.serviceId);
+    const previousValue = config.votesVisible;
+    
     try {
-        await updateServiceConfig(config.serviceId, newValue, config.serviceName);
-        config.votesVisible = newValue;
-        debugLog('Updated visibility for service', config.serviceId, 'to', newValue);
+        config.votesVisible = newValue; // Optimistic update
+        await updateServiceConfig(config.serviceId, newValue, config.serviceName, config.enabled);
+        debugLog('Updated vote visibility for service', config.serviceId, 'to', newValue);
         toast.add({
             severity: 'success',
             summary: 'Gespeichert',
             detail: `Sichtbarkeit für ${config.serviceName || 'Service ' + config.serviceId} geändert`,
             life: 3000,
         });
-    } catch (error) {
-        console.error('Error updating config:', error);
+    } catch (err) {
+        config.votesVisible = previousValue; // Revert on error
+        const errorMsg = err instanceof Error ? err.message : 'Unbekannter Fehler';
+        debugLog('Error updating config:', err);
         toast.add({
             severity: 'error',
-            summary: 'Fehler',
-            detail: 'Änderung konnte nicht gespeichert werden',
+            summary: 'Fehler beim Speichern',
+            detail: `Änderung konnte nicht gespeichert werden: ${errorMsg}`,
             life: 5000,
         });
     } finally {
-        savingServiceId.value = null;
+        savingServiceIds.value.delete(config.serviceId);
+    }
+}
+
+async function handleToggleEnabled(config: AdminServiceConfig, newValue: boolean) {
+    // Prevent double-toggling (race condition)
+    if (savingServiceIds.value.has(config.serviceId)) {
+        return;
+    }
+    
+    savingServiceIds.value.add(config.serviceId);
+    const previousValue = config.enabled;
+    
+    try {
+        config.enabled = newValue; // Optimistic update
+        await updateServiceConfig(config.serviceId, config.votesVisible, config.serviceName, newValue);
+        debugLog('Updated enabled status for service', config.serviceId, 'to', newValue);
+        toast.add({
+            severity: 'success',
+            summary: 'Gespeichert',
+            detail: `Status für ${config.serviceName || 'Service ' + config.serviceId} geändert`,
+            life: 3000,
+        });
+    } catch (err) {
+        config.enabled = previousValue; // Revert on error
+        const errorMsg = err instanceof Error ? err.message : 'Unbekannter Fehler';
+        debugLog('Error updating config:', err);
+        toast.add({
+            severity: 'error',
+            summary: 'Fehler beim Speichern',
+            detail: `Änderung konnte nicht gespeichert werden: ${errorMsg}`,
+            life: 5000,
+        });
+    } finally {
+        savingServiceIds.value.delete(config.serviceId);
     }
 }
 
@@ -113,37 +159,76 @@ onMounted(loadConfigs);
             <p>Konfiguration wird geladen...</p>
         </div>
 
+        <div v-else-if="error" class="error-state">
+            <i class="pi pi-exclamation-triangle"></i>
+            <p>{{ error }}</p>
+            <Button
+                label="Erneut versuchen"
+                icon="pi pi-refresh"
+                severity="warning"
+                @click="loadConfigs"
+            />
+        </div>
+
         <div v-else-if="configs.length === 0" class="empty-state">
             <i class="pi pi-cog"></i>
             <p>Keine Services mit Antworten gefunden.</p>
         </div>
 
+        <div v-else class="filter-section">
+            <input
+                v-model="filterText"
+                type="text"
+                placeholder="Service suchen (Name, Kategorie, ID)..."
+                class="filter-input"
+            />
+            <p class="filter-hint">
+                💡 <strong>Mehrfach-Sortierung:</strong> Klick auf Spaltenkopf sortiert primär, Shift+Klick fügt weitere Sortierungen hinzu
+            </p>
+        </div>
+
         <DataTable
-            v-else
-            :value="configs"
+            v-if="!loading && configs.length > 0"
+            :value="filteredConfigs"
             stripedRows
+            sortMode="multiple"
+            removableSort
             class="p-datatable-sm"
         >
             <Column field="serviceId" header="Service ID" sortable style="width: 120px" />
-            <Column field="serviceName" header="Service Name" sortable style="min-width: 250px">
+            <Column field="categoryName" header="Kategorie" sortable style="width: 200px">
                 <template #body="{ data }">
-                    <span v-if="data.categoryName" class="service-name">
-                        <strong>{{ data.categoryName }}</strong>: {{ data.serviceName || `Service ${data.serviceId}` }}
-                    </span>
-                    <span v-else>
-                        {{ data.serviceName || `Service ${data.serviceId}` }}
-                    </span>
+                    {{ data.categoryName || '-' }}
                 </template>
             </Column>
-            <Column header="Votes sichtbar" style="width: 150px">
+            <Column field="serviceName" header="Service Name" sortable style="min-width: 250px">
+                <template #body="{ data }">
+                    {{ data.serviceName || `Service ${data.serviceId}` }}
+                </template>
+            </Column>
+            <Column field="enabled" header="Aktiv" sortable style="width: 100px">
+                <template #body="{ data }">
+                    <div class="toggle-container">
+                        <ToggleSwitch
+                            :modelValue="data.enabled"
+                            @update:modelValue="(val: boolean) => handleToggleEnabled(data, val)"
+                            :disabled="savingServiceIds.has(data.serviceId)"
+                        />
+                        <span v-if="savingServiceIds.has(data.serviceId)" class="saving-indicator">
+                            <i class="pi pi-spin pi-spinner"></i>
+                        </span>
+                    </div>
+                </template>
+            </Column>
+            <Column field="votesVisible" header="Votes sichtbar" sortable style="width: 150px">
                 <template #body="{ data }">
                     <div class="toggle-container">
                         <ToggleSwitch
                             :modelValue="data.votesVisible"
-                            @update:modelValue="(val: boolean) => handleToggle(data, val)"
-                            :disabled="savingServiceId === data.serviceId"
+                            @update:modelValue="(val: boolean) => handleToggleVotes(data, val)"
+                            :disabled="savingServiceIds.has(data.serviceId)"
                         />
-                        <span v-if="savingServiceId === data.serviceId" class="saving-indicator">
+                        <span v-if="savingServiceIds.has(data.serviceId)" class="saving-indicator">
                             <i class="pi pi-spin pi-spinner"></i>
                         </span>
                     </div>
@@ -179,6 +264,56 @@ onMounted(loadConfigs);
     opacity: 0.5;
 }
 
+.error-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #dc3545;
+}
+
+.error-state i {
+    font-size: 2rem;
+    margin-bottom: 12px;
+    opacity: 0.8;
+}
+
+.error-state p {
+    margin-bottom: 20px;
+    color: #666;
+}
+
+.filter-section {
+    padding: 12px 0 16px 0;
+}
+
+.filter-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    color: #495057;
+    background: white;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.filter-input:focus {
+    outline: none;
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.filter-input::placeholder {
+    color: #999;
+}
+
+.filter-hint {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 8px;
+    margin-bottom: 0;
+    font-style: italic;
+}
+
 .toggle-container {
     display: flex;
     align-items: center;
@@ -187,16 +322,5 @@ onMounted(loadConfigs);
 
 .saving-indicator {
     color: #666;
-}
-
-.service-name {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.service-name strong {
-    font-size: 0.9rem;
-    color: #333;
 }
 </style>
