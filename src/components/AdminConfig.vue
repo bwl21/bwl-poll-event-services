@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import ToggleSwitch from 'primevue/toggleswitch';
@@ -25,6 +25,22 @@ const toast = useToast();
 const loading = ref(true);
 const configs = ref<(AdminServiceConfig & { categoryName?: string })[]>([]);
 const savingServiceId = ref<number | null>(null);
+const filterText = ref('');
+
+const filteredConfigs = computed(() => {
+    if (!filterText.value.trim()) {
+        return configs.value;
+    }
+    
+    const query = filterText.value.toLowerCase();
+    return configs.value.filter((config) => {
+        return (
+            (config.serviceName?.toLowerCase().includes(query) ?? false) ||
+            (config.categoryName?.toLowerCase().includes(query) ?? false) ||
+            config.serviceId.toString().includes(query)
+        );
+    });
+});
 
 async function loadConfigs() {
     loading.value = true;
@@ -100,9 +116,18 @@ onMounted(loadConfigs);
             <p>Keine Services mit Antworten gefunden.</p>
         </div>
 
+        <div v-else class="filter-section">
+            <input
+                v-model="filterText"
+                type="text"
+                placeholder="Service suchen (Name, Kategorie, ID)..."
+                class="filter-input"
+            />
+        </div>
+
         <DataTable
-            v-else
-            :value="configs"
+            v-if="!loading && configs.length > 0"
+            :value="filteredConfigs"
             stripedRows
             class="p-datatable-sm"
         >
@@ -159,6 +184,31 @@ onMounted(loadConfigs);
     font-size: 2rem;
     margin-bottom: 12px;
     opacity: 0.5;
+}
+
+.filter-section {
+    padding: 12px 0 16px 0;
+}
+
+.filter-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    color: #495057;
+    background: white;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.filter-input:focus {
+    outline: none;
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.filter-input::placeholder {
+    color: #999;
 }
 
 .toggle-container {
