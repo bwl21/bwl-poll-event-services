@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, defineAsyncComponent } from 'vue';
 import DatePicker from 'primevue/datepicker';
 import InputNumber from 'primevue/inputnumber';
 import Button from 'primevue/button';
@@ -10,7 +10,8 @@ import TabView from 'primevue/tabview';
 import TabPanel from 'primevue/tabpanel';
 
 import EventCard from './components/EventCard.vue';
-import AdminPanel from './components/AdminPanel.vue';
+// Lazy load AdminPanel (only for admins)
+const AdminPanel = defineAsyncComponent(() => import('./components/AdminPanel.vue'));
 import {
     fetchEventsWithServices,
     loadAllPollResponses,
