@@ -34,10 +34,12 @@ const editingResponse = ref<Partial<ServicePollEntry> | null>(null);
 const saving = ref(false);
 const assignedPeople = ref<Map<number, string>>(new Map());
 const peopleOptions = computed(() => {
-    return Array.from(assignedPeople.value.entries()).map(([id, name]) => ({
+    const options = Array.from(assignedPeople.value.entries()).map(([id, name]) => ({
         label: name,
         value: id,
     }));
+    console.log('[AdminResponses] peopleOptions computed:', options);
+    return options;
 });
 
 // Use shared data preparation logic (same as Excel export)
@@ -47,8 +49,13 @@ const allRows = computed(() => {
 
 // Load assigned people on mount
 onMounted(async () => {
-    const people = await getAllAssignedPeople(props.events);
-    assignedPeople.value = people;
+    try {
+        const people = await getAllAssignedPeople(props.events);
+        console.log('[AdminResponses] Loaded assigned people:', people);
+        assignedPeople.value = people;
+    } catch (error) {
+        console.error('[AdminResponses] Error loading assigned people:', error);
+    }
 });
 
 // Helper function to get response icon and severity for tags
@@ -71,11 +78,12 @@ function getUserName(userId: number): string {
     return assignedPeople.value.get(userId) || `User ${userId}`;
 }
 
-function openAddDialog() {
+function openAddDialog(eventId?: number, serviceId?: number) {
     isEditMode.value = false;
+    console.log('[AdminResponses] Opening add dialog, assigned people:', assignedPeople.value);
     editingResponse.value = {
-        eventId: undefined,
-        serviceId: undefined,
+        eventId: eventId,
+        serviceId: serviceId,
         userId: undefined,
         response: null,
         comment: '',
@@ -155,12 +163,6 @@ async function handleDelete() {
                 <label for="showEmpty">Leere Services anzeigen</label>
                 <ToggleSwitch id="showEmpty" v-model="showEmptyServices" />
             </div>
-            <Button 
-                label="+ Antwort hinzufügen" 
-                icon="pi pi-plus" 
-                @click="openAddDialog"
-                severity="success"
-            />
         </div>
         
         <DataTable 
@@ -204,9 +206,19 @@ async function handleDelete() {
                     {{ formatTimestamp(slotProps.data.timestamp) }}
                 </template>
             </Column>
-            <Column header="Aktionen">
+            <Column header="Aktionen" style="width: 120px">
                 <template #body="slotProps">
                     <Button 
+                        v-if="!slotProps.data.response"
+                        icon="pi pi-plus" 
+                        severity="success" 
+                        text 
+                        size="small"
+                        @click="openAddDialog(slotProps.data.eventId, slotProps.data.serviceId)"
+                        title="Antwort hinzufügen"
+                    />
+                    <Button 
+                        v-else
                         icon="pi pi-pencil" 
                         severity="info" 
                         text 
@@ -262,15 +274,26 @@ async function handleDelete() {
             <div v-if="editingResponse" class="edit-form">
                 <div class="form-group">
                     <label for="edit-user">Benutzer</label>
-                    <Dropdown
-                        id="edit-user"
-                        v-model="editingResponse.userId"
-                        :options="peopleOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Benutzer auswählen"
-                        :disabled="isEditMode"
-                    />
+                    <div v-if="isEditMode" class="user-display">
+                        {{ getUserName(editingResponse.userId) }}
+                    </div>
+                    <div v-else class="user-input-group">
+                        <Dropdown
+                            v-model="editingResponse.userId"
+                            :options="peopleOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            placeholder="Aus Liste wählen oder ID eingeben"
+                            showClear
+                            editable
+                        />
+                        <span class="help-text">Oder User-ID eingeben:</span>
+                        <InputText
+                            v-model.number="editingResponse.userId"
+                            type="number"
+                            placeholder="User-ID"
+                        />
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -280,7 +303,7 @@ async function handleDelete() {
                         v-model.number="editingResponse.eventId"
                         type="number"
                         placeholder="Event-ID"
-                        :disabled="isEditMode"
+                        :disabled="isEditMode || !!editingResponse.eventId"
                     />
                 </div>
 
@@ -291,7 +314,7 @@ async function handleDelete() {
                         v-model.number="editingResponse.serviceId"
                         type="number"
                         placeholder="Service-ID"
-                        :disabled="isEditMode"
+                        :disabled="isEditMode || !!editingResponse.serviceId"
                     />
                 </div>
 
@@ -384,6 +407,38 @@ async function handleDelete() {
 .form-group :deep(.p-inputtext),
 .form-group :deep(.p-dropdown),
 .form-group :deep(.p-inputtextarea) {
+    width: 100% !important;
+}
+
+.form-group :deep(.p-dropdown-trigger) {
+    width: auto;
+}
+
+.user-display {
+    padding: 8px 12px;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+.user-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.user-input-group :deep(.p-dropdown) {
     width: 100%;
+}
+
+.user-input-group :deep(.p-inputtext) {
+    width: 100%;
+}
+
+.help-text {
+    font-size: 0.75rem;
+    color: #666;
+    font-style: italic;
 }
 </style>
