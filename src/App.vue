@@ -112,6 +112,7 @@ function handleResponseDeleted(entry: ServicePollEntry) {
 
 function handleResponseSavedAdmin(entry: ServicePollEntry) {
     // Handle response saved from admin dialog
+    console.log('[App.vue] handleResponseSavedAdmin called with:', entry);
     const idx = allResponses.value.findIndex(
         (r) =>
             r.eventId === entry.eventId &&
@@ -119,10 +120,13 @@ function handleResponseSavedAdmin(entry: ServicePollEntry) {
             r.userId === entry.userId
     );
     if (idx >= 0) {
+        console.log('[App.vue] Updating existing response at index', idx);
         allResponses.value[idx] = entry;
     } else {
+        console.log('[App.vue] Adding new response');
         allResponses.value.push(entry);
     }
+    console.log('[App.vue] allResponses now:', allResponses.value);
 }
 
 onMounted(loadData);

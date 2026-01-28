@@ -13,6 +13,8 @@ export interface ServicePollEntry {
     response: PollResponse;
     comment: string;
     timestamp: string;
+    editedBy?: string; // Person who edited (admin), if not the user themselves
+    editedAt?: string; // When it was last edited
 }
 
 export interface EventResource {
@@ -36,6 +38,7 @@ export interface ServiceInfo {
     isValid?: boolean;
     assignments?: ServiceAssignment[];
     votesVisible?: boolean;
+    groupIds?: number[]; // Service group IDs for finding eligible people
 }
 
 export interface ServiceAssignment {
@@ -60,6 +63,8 @@ export interface PreparedResponseRow {
     response: string | null;
     comment: string;
     timestamp: string;
+    editedBy?: string; // Person who edited (admin), if not the user themselves
+    editedAt?: string; // When it was last edited
     // Original data for deletion/reference
     eventId: number;
     serviceId: number;

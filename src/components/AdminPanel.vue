@@ -24,6 +24,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: 'response-deleted', entry: ServicePollEntry): void;
+    (e: 'response-saved', entry: ServicePollEntry): void;
 }>();
 
 const activeTab = ref(0);
@@ -31,6 +32,11 @@ const activeTab = ref(0);
 function handleResponseDeleted(entry: ServicePollEntry) {
     debugLog('Response deleted:', entry);
     emit('response-deleted', entry);
+}
+
+function handleResponseSaved(entry: ServicePollEntry) {
+    debugLog('Response saved:', entry);
+    emit('response-saved', entry);
 }
 
 function handleExportAll() {
@@ -58,6 +64,7 @@ function handleExportAll() {
                     :responses="responses"
                     :events="events"
                     @response-deleted="handleResponseDeleted"
+                    @response-saved="handleResponseSaved"
                 />
             </TabPanel>
 

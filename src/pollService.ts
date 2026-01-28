@@ -212,6 +212,7 @@ export async function fetchEventsWithServices(
                             isValid: eventService.isValid,
                             assignments,
                             votesVisible: votesVisibilityMap.get(eventService.serviceId!) ?? true, // Default to visible
+                            groupIds: serviceDef?.groupIds || [], // Store group IDs for finding eligible people
                         };
                     });
 
@@ -693,7 +694,9 @@ export function formatTime(dateStr: string): string {
  * Format timestamp
  */
 export function formatTimestamp(timestamp: string): string {
+    if (!timestamp) return '-';
     const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return '-';
     return date.toLocaleString('de-DE', {
         day: '2-digit',
         month: '2-digit',
@@ -761,6 +764,8 @@ export function prepareResponseRows(
                         response: null,
                         comment: '',
                         timestamp: '',
+                        editedBy: undefined,
+                        editedAt: undefined,
                         eventId: event.id,
                         serviceId: service.id,
                         userId: 0,
@@ -779,6 +784,8 @@ export function prepareResponseRows(
                         response: response.response,
                         comment: response.comment || '',
                         timestamp: response.timestamp,
+                        editedBy: response.editedBy,
+                        editedAt: response.editedAt,
                         eventId: response.eventId,
                         serviceId: response.serviceId,
                         userId: response.userId,
@@ -797,25 +804,54 @@ export function prepareResponseRows(
 }
 
 /**
- * Get all people from assignments across all services (for admin dropdown)
+ * Get all people who can fill a specific service (by group membership)
  */
-export async function getAllAssignedPeople(
-    events: EventWithServices[]
+export async function getServiceCandidates(
+    groupIds: number[]
 ): Promise<Map<number, string>> {
     const people = new Map<number, string>();
     
-    for (const event of events) {
-        for (const service of event.services) {
-            if (service.assignments) {
-                for (const assignment of service.assignments) {
-                    if (!people.has(assignment.personId)) {
-                        people.set(assignment.personId, assignment.personName);
-                    }
-                }
-            }
-        }
+    console.log('[getServiceCandidates] Called with groupIds:', groupIds);
+    
+    if (!groupIds || groupIds.length === 0) {
+        console.warn('[getServiceCandidates] No group IDs provided');
+        return people;
     }
     
+    try {
+        // Fetch all group members for the service groups
+        for (const groupId of groupIds) {
+            console.log('[getServiceCandidates] Fetching members for group', groupId);
+            const groupMembers = await churchtoolsClient.get<any[]>(
+                `/groups/${groupId}/members`
+            );
+            console.log('[getServiceCandidates] Response for group', groupId, ':', groupMembers);
+            
+            if (groupMembers && Array.isArray(groupMembers)) {
+                console.log('[getServiceCandidates] Found', groupMembers.length, 'members in group', groupId);
+                for (const member of groupMembers) {
+                    console.log('[getServiceCandidates] Processing member:', member);
+                    const personId = member.personId;
+                    const personName = member.person?.domainAttributes?.firstName && member.person?.domainAttributes?.lastName
+                        ? `${member.person.domainAttributes.firstName} ${member.person.domainAttributes.lastName}`
+                        : member.name || member.title || '';
+                    
+                    console.log('[getServiceCandidates] PersonId:', personId, 'PersonName:', personName);
+                    
+                    if (personId && personName && !people.has(personId)) {
+                        people.set(personId, personName);
+                        console.log('[getServiceCandidates] Added person', personId, personName);
+                    }
+                }
+            } else {
+                console.warn('[getServiceCandidates] No members found or invalid response for group', groupId);
+            }
+        }
+    } catch (error) {
+        console.error('[getServiceCandidates] Error fetching group members:', error);
+    }
+    
+    console.log('[getServiceCandidates] Returning', people.size, 'people');
     return people;
 }
 
@@ -827,7 +863,9 @@ export async function saveAdminPollResponse(
     serviceId: number,
     userId: number,
     response: PollResponse,
-    comment: string
+    comment: string,
+    userName?: string,
+    adminName?: string
 ): Promise<ServicePollEntry> {
     try {
         const category = await getPollCategory();
@@ -858,9 +896,12 @@ export async function saveAdminPollResponse(
             eventId,
             serviceId,
             userId,
+            userName,
             response,
             comment,
-            timestamp: new Date().toISOString(),
+            timestamp: existing?.timestamp || new Date().toISOString(),
+            editedBy: adminName,
+            editedAt: new Date().toISOString(),
         };
 
         if (existing) {

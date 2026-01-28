@@ -27,6 +27,8 @@ interface ExportRow {
     'Antwort': string;
     'Kommentar': string;
     'Zeitstempel': string;
+    'Bearbeitet von': string;
+    'Bearbeitungsdatum': string;
 }
 
 export function exportToExcel(
@@ -48,10 +50,12 @@ export function exportToExcel(
         'Antwort': formatResponse(row.response),
         'Kommentar': row.comment,
         'Zeitstempel': row.timestamp ? formatTimestamp(row.timestamp) : '',
+        'Bearbeitet von': row.editedBy || '',
+        'Bearbeitungsdatum': row.editedAt ? formatTimestamp(row.editedAt) : '',
     }));
 
     // Create workbook and worksheet with column order
-    const columnOrder = ['Event', 'Wochentag', 'Datum', 'Uhrzeit', 'Dienst', 'Besetzung', 'Benutzer', 'Antwort', 'Kommentar', 'Zeitstempel'];
+    const columnOrder = ['Event', 'Wochentag', 'Datum', 'Uhrzeit', 'Dienst', 'Besetzung', 'Benutzer', 'Antwort', 'Kommentar', 'Zeitstempel', 'Bearbeitet von', 'Bearbeitungsdatum'];
     const worksheet = XLSX.utils.json_to_sheet(rows, { header: columnOrder });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Umfrage-Antworten');
@@ -68,6 +72,8 @@ export function exportToExcel(
         { wch: 12 }, // Antwort
         { wch: 30 }, // Kommentar
         { wch: 20 }, // Zeitstempel
+        { wch: 20 }, // Bearbeitet von
+        { wch: 20 }, // Bearbeitungsdatum
     ];
 
     // Generate filename with current date

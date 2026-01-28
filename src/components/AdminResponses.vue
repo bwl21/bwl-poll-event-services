@@ -10,7 +10,7 @@ import Dropdown from 'primevue/dropdown';
 import InputText from 'primevue/inputtext';
 import Textarea from 'primevue/textarea';
 import type { ServicePollEntry, EventWithServices, PollResponse } from '../types';
-import { deleteResponse, prepareResponseRows, formatResponse, formatTimestamp, getAllAssignedPeople, saveAdminPollResponse } from '../pollService';
+import { deleteResponse, prepareResponseRows, formatResponse, formatTimestamp, saveAdminPollResponse, getServiceCandidates, getCurrentUser } from '../pollService';
 
 const props = defineProps<{
     responses: ServicePollEntry[];
@@ -32,13 +32,27 @@ const editDialogVisible = ref(false);
 const isEditMode = ref(false);
 const editingResponse = ref<Partial<ServicePollEntry> | null>(null);
 const saving = ref(false);
-const assignedPeople = ref<Map<number, string>>(new Map());
+const serviceCandidates = ref<Map<number, string>>(new Map());
+const currentUser = ref<{ id: number; name: string } | null>(null);
+
 const peopleOptions = computed(() => {
-    const options = Array.from(assignedPeople.value.entries()).map(([id, name]) => ({
+    if (!editingResponse.value?.eventId || !editingResponse.value?.serviceId) {
+        return [];
+    }
+
+    // Get the service to fetch group members
+    const event = props.events.find(e => e.id === editingResponse.value?.eventId);
+    if (!event) return [];
+    
+    const service = event.services.find(s => s.id === editingResponse.value?.serviceId);
+    if (!service) return [];
+    
+    // Use service candidates (people from service groups)
+    const options = Array.from(serviceCandidates.value.entries()).map(([id, name]) => ({
         label: name,
         value: id,
     }));
-    console.log('[AdminResponses] peopleOptions computed:', options);
+    console.log('[AdminResponses] peopleOptions for service', editingResponse.value?.serviceId, ':', options);
     return options;
 });
 
@@ -47,16 +61,17 @@ const allRows = computed(() => {
     return prepareResponseRows(props.events, props.responses, showEmptyServices.value);
 });
 
-// Load assigned people on mount
+// Load current user on mount
 onMounted(async () => {
     try {
-        const people = await getAllAssignedPeople(props.events);
-        console.log('[AdminResponses] Loaded assigned people:', people);
-        assignedPeople.value = people;
+        currentUser.value = await getCurrentUser();
+        console.log('[AdminResponses] Current user:', currentUser.value);
     } catch (error) {
-        console.error('[AdminResponses] Error loading assigned people:', error);
+        console.error('[AdminResponses] Error loading current user:', error);
     }
 });
+
+
 
 // Helper function to get response icon and severity for tags
 function getResponseDisplay(response: PollResponse | null) {
@@ -75,12 +90,21 @@ function getResponseDisplay(response: PollResponse | null) {
 
 // Get user name from ID
 function getUserName(userId: number): string {
-    return assignedPeople.value.get(userId) || `User ${userId}`;
+    // Get the current event
+    const event = props.events.find(e => e.id === editingResponse.value?.eventId);
+    if (!event) return `User ${userId}`;
+    
+    // Get the current service
+    const service = event.services.find(s => s.id === editingResponse.value?.serviceId);
+    if (!service?.assignments) return `User ${userId}`;
+    
+    // Find the person in assignments
+    const assignment = service.assignments.find(a => a.personId === userId);
+    return assignment?.personName || `User ${userId}`;
 }
 
-function openAddDialog(eventId?: number, serviceId?: number) {
+async function openAddDialog(eventId?: number, serviceId?: number) {
     isEditMode.value = false;
-    console.log('[AdminResponses] Opening add dialog, assigned people:', assignedPeople.value);
     editingResponse.value = {
         eventId: eventId,
         serviceId: serviceId,
@@ -88,32 +112,81 @@ function openAddDialog(eventId?: number, serviceId?: number) {
         response: null,
         comment: '',
     };
+    
+    // Load service candidates (people from service groups)
+    if (eventId && serviceId) {
+        const event = props.events.find(e => e.id === eventId);
+        console.log('[openAddDialog] Event:', event);
+        const service = event?.services.find(s => s.id === serviceId);
+        console.log('[openAddDialog] Service:', service);
+        console.log('[openAddDialog] Service groupIds:', service?.groupIds);
+        if (service?.groupIds && service.groupIds.length > 0) {
+            try {
+                serviceCandidates.value = await getServiceCandidates(service.groupIds);
+                console.log('[AdminResponses] Loaded service candidates:', Array.from(serviceCandidates.value.entries()));
+            } catch (error) {
+                console.error('[AdminResponses] Error loading service candidates:', error);
+            }
+        } else {
+            console.warn('[openAddDialog] No groupIds found for service');
+        }
+    }
+    
     editDialogVisible.value = true;
 }
 
-function openEditDialog(row: any) {
+async function openEditDialog(row: any) {
     isEditMode.value = true;
     editingResponse.value = { ...row };
+    
+    // Load service candidates (people from service groups)
+    if (row.eventId && row.serviceId) {
+        const event = props.events.find(e => e.id === row.eventId);
+        const service = event?.services.find(s => s.id === row.serviceId);
+        if (service?.groupIds && service.groupIds.length > 0) {
+            try {
+                serviceCandidates.value = await getServiceCandidates(service.groupIds);
+                console.log('[AdminResponses] Loaded service candidates for edit:', Array.from(serviceCandidates.value.entries()));
+            } catch (error) {
+                console.error('[AdminResponses] Error loading service candidates:', error);
+            }
+        }
+    }
+    
     editDialogVisible.value = true;
 }
 
 async function saveEditingResponse() {
+    console.log('[saveEditingResponse] editingResponse.value:', editingResponse.value);
+    
     if (!editingResponse.value?.eventId || !editingResponse.value?.serviceId || !editingResponse.value?.userId) {
+        console.warn('[saveEditingResponse] Missing required fields');
         return;
     }
 
     saving.value = true;
     try {
+        // Get userName from serviceCandidates
+        const userName = serviceCandidates.value.get(editingResponse.value.userId) || `User ${editingResponse.value.userId}`;
+        console.log('[saveEditingResponse] Saving with response:', editingResponse.value.response, 'comment:', editingResponse.value.comment, 'userName:', userName);
+        
         await saveAdminPollResponse(
             editingResponse.value.eventId,
             editingResponse.value.serviceId,
             editingResponse.value.userId,
             editingResponse.value.response as PollResponse,
-            editingResponse.value.comment || ''
+            editingResponse.value.comment || '',
+            userName,
+            currentUser.value?.name
         );
 
-        // Emit event to trigger parent update
-        emit('response-saved', editingResponse.value as ServicePollEntry);
+        // Emit event with userName included
+        const savedEntry = {
+            ...editingResponse.value,
+            userName,
+        } as ServicePollEntry;
+        console.log('[AdminResponses] Emitting response-saved:', savedEntry);
+        emit('response-saved', savedEntry);
         editDialogVisible.value = false;
     } catch (error) {
         console.error('Error saving response:', error);
@@ -206,10 +279,9 @@ async function handleDelete() {
                     {{ formatTimestamp(slotProps.data.timestamp) }}
                 </template>
             </Column>
-            <Column header="Aktionen" style="width: 120px">
+            <Column header="Aktionen" style="width: 160px">
                 <template #body="slotProps">
                     <Button 
-                        v-if="!slotProps.data.response"
                         icon="pi pi-plus" 
                         severity="success" 
                         text 
@@ -218,7 +290,7 @@ async function handleDelete() {
                         title="Antwort hinzufügen"
                     />
                     <Button 
-                        v-else
+                        v-if="slotProps.data.userName && slotProps.data.userName !== '-'"
                         icon="pi pi-pencil" 
                         severity="info" 
                         text 
@@ -227,6 +299,7 @@ async function handleDelete() {
                         title="Antwort bearbeiten"
                     />
                     <Button 
+                        v-if="slotProps.data.userName && slotProps.data.userName !== '-'"
                         icon="pi pi-trash" 
                         severity="danger" 
                         text 
@@ -275,46 +348,16 @@ async function handleDelete() {
                 <div class="form-group">
                     <label for="edit-user">Benutzer</label>
                     <div v-if="isEditMode" class="user-display">
-                        {{ getUserName(editingResponse.userId) }}
+                        {{ editingResponse.userName || `User ${editingResponse.userId}` }}
                     </div>
-                    <div v-else class="user-input-group">
-                        <Dropdown
-                            v-model="editingResponse.userId"
-                            :options="peopleOptions"
-                            optionLabel="label"
-                            optionValue="value"
-                            placeholder="Aus Liste wählen oder ID eingeben"
-                            showClear
-                            editable
-                        />
-                        <span class="help-text">Oder User-ID eingeben:</span>
-                        <InputText
-                            v-model.number="editingResponse.userId"
-                            type="number"
-                            placeholder="User-ID"
-                        />
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="edit-event">Event-ID</label>
-                    <InputText
-                        id="edit-event"
-                        v-model.number="editingResponse.eventId"
-                        type="number"
-                        placeholder="Event-ID"
-                        :disabled="isEditMode || !!editingResponse.eventId"
-                    />
-                </div>
-
-                <div class="form-group">
-                    <label for="edit-service">Service-ID</label>
-                    <InputText
-                        id="edit-service"
-                        v-model.number="editingResponse.serviceId"
-                        type="number"
-                        placeholder="Service-ID"
-                        :disabled="isEditMode || !!editingResponse.serviceId"
+                    <Dropdown
+                        v-else
+                        v-model="editingResponse.userId"
+                        :options="peopleOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Person wählen"
+                        showClear
                     />
                 </div>
 
