@@ -5,7 +5,8 @@ import Column from 'primevue/column';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import ToggleSwitch from 'primevue/toggleswitch';
-import type { ServicePollEntry, EventWithServices } from '../types';
+import Tag from 'primevue/tag';
+import type { ServicePollEntry, EventWithServices, PollResponse } from '../types';
 import { deleteResponse, prepareResponseRows, formatResponse, formatTimestamp } from '../pollService';
 
 const props = defineProps<{
@@ -26,6 +27,21 @@ const showEmptyServices = ref(true);
 const allRows = computed(() => {
     return prepareResponseRows(props.events, props.responses, showEmptyServices.value);
 });
+
+// Helper function to get response icon and severity for tags
+function getResponseDisplay(response: PollResponse | null) {
+    if (!response) {
+        return { icon: '', severity: 'secondary', label: '-' };
+    }
+    
+    const displayMap = {
+        yes: { icon: 'pi pi-check', severity: 'success', label: 'Ja' },
+        maybe: { icon: 'pi pi-question', severity: 'warning', label: 'Vielleicht' },
+        no: { icon: 'pi pi-times', severity: 'danger', label: 'Nein' }
+    };
+    
+    return displayMap[response] || { icon: '', severity: 'secondary', label: response };
+}
 
 function confirmDelete(row: import('../types').PreparedResponseRow) {
     selectedResponse.value = {
@@ -92,7 +108,11 @@ async function handleDelete() {
             <Column field="userName" header="Benutzer" sortable></Column>
             <Column field="response" header="Antwort" sortable>
                 <template #body="slotProps">
-                    {{ formatResponse(slotProps.data.response) }}
+                    <Tag 
+                        :value="getResponseDisplay(slotProps.data.response).label" 
+                        :severity="getResponseDisplay(slotProps.data.response).severity"
+                        :icon="getResponseDisplay(slotProps.data.response).icon || undefined"
+                    />
                 </template>
             </Column>
             <Column field="comment" header="Kommentar">
