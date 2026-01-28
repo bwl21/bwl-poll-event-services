@@ -110,6 +110,21 @@ function handleResponseDeleted(entry: ServicePollEntry) {
     }
 }
 
+function handleResponseSavedAdmin(entry: ServicePollEntry) {
+    // Handle response saved from admin dialog
+    const idx = allResponses.value.findIndex(
+        (r) =>
+            r.eventId === entry.eventId &&
+            r.serviceId === entry.serviceId &&
+            r.userId === entry.userId
+    );
+    if (idx >= 0) {
+        allResponses.value[idx] = entry;
+    } else {
+        allResponses.value.push(entry);
+    }
+}
+
 onMounted(loadData);
 </script>
 
@@ -220,6 +235,7 @@ onMounted(loadData);
                     :responses="allResponses"
                     :events="events"
                     @response-deleted="handleResponseDeleted"
+                    @response-saved="handleResponseSavedAdmin"
                 />
             </TabPanel>
         </TabView>

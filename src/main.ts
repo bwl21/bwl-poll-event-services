@@ -21,6 +21,8 @@ import Dialog from 'primevue/dialog';
 import ToggleSwitch from 'primevue/toggleswitch';
 import Textarea from 'primevue/textarea';
 import Tag from 'primevue/tag';
+import Dropdown from 'primevue/dropdown';
+import InputText from 'primevue/inputtext';
 
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import App from './App.vue';
@@ -88,5 +90,7 @@ app.component('Dialog', Dialog);
 app.component('ToggleSwitch', ToggleSwitch);
 app.component('Textarea', Textarea);
 app.component('Tag', Tag);
+app.component('Dropdown', Dropdown);
+app.component('InputText', InputText);
 
 app.mount('#app');

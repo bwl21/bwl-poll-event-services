@@ -795,3 +795,96 @@ export function prepareResponseRows(
 
     return rows;
 }
+
+/**
+ * Get all people from assignments across all services (for admin dropdown)
+ */
+export async function getAllAssignedPeople(
+    events: EventWithServices[]
+): Promise<Map<number, string>> {
+    const people = new Map<number, string>();
+    
+    for (const event of events) {
+        for (const service of event.services) {
+            if (service.assignments) {
+                for (const assignment of service.assignments) {
+                    if (!people.has(assignment.personId)) {
+                        people.set(assignment.personId, assignment.personName);
+                    }
+                }
+            }
+        }
+    }
+    
+    return people;
+}
+
+/**
+ * Save a poll response as admin (can set arbitrary user)
+ */
+export async function saveAdminPollResponse(
+    eventId: number,
+    serviceId: number,
+    userId: number,
+    response: PollResponse,
+    comment: string
+): Promise<ServicePollEntry> {
+    try {
+        const category = await getPollCategory();
+        if (!category) {
+            throw new Error('Could not create poll category');
+        }
+
+        const module = await getOrCreateModule(
+            import.meta.env.VITE_KEY || 'bwl-poll-event-services',
+            'Event Service Poll',
+            'Poll extension for ChurchTools event services'
+        );
+
+        const values = await getCustomDataValues<ServicePollEntry>(
+            category.id,
+            module.id
+        );
+
+        // Find existing response for this event/service/user combination
+        const existing = values.find(
+            (v) =>
+                v.eventId === eventId &&
+                v.serviceId === serviceId &&
+                v.userId === userId
+        );
+
+        const pollEntry: ServicePollEntry = {
+            eventId,
+            serviceId,
+            userId,
+            response,
+            comment,
+            timestamp: new Date().toISOString(),
+        };
+
+        if (existing) {
+            // Update existing response
+            await updateCustomDataValue(
+                category.id,
+                existing.id!,
+                { value: JSON.stringify(pollEntry) },
+                module.id
+            );
+        } else {
+            // Create new response
+            await createCustomDataValue(
+                {
+                    dataCategoryId: category.id,
+                    value: JSON.stringify(pollEntry),
+                },
+                module.id
+            );
+        }
+
+        return pollEntry;
+    } catch (error) {
+        console.error('Error saving admin poll response:', error);
+        throw error;
+    }
+}
