@@ -173,6 +173,7 @@ onMounted(loadData);
                             v-model="startDate"
                             dateFormat="dd.mm.yy"
                             showIcon
+                            locale="de"
                             @date-select="loadData"
                         />
                     </div>
