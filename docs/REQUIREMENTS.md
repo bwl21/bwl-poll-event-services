@@ -4,6 +4,22 @@
 
 Diese ChurchTools-Erweiterung ermöglicht es Benutzern, ihre Verfügbarkeit für Dienste in kommenden Events anzugeben. Die Erweiterung zeigt alle Events an, bei denen Dienste zu besetzen sind, die von den Gruppen des Benutzers besetzt werden können.
 
+### Status
+- ✅ **Core-Funktionalität**: Implementiert und getestet
+- ✅ **Event-Abruf und Filterung**: Funktional
+- ✅ **Umfrage-Interface**: UI fertig (Mobile & Desktop)
+- ✅ **Datenspeicherung**: Im Key-Value-Store funktional
+- ✅ **Admin-Panel**: Mit Response-Management und Service-Config
+- ✅ **Excel-Export**: Implementiert mit xlsx
+- ✅ **E2E-Tests**: Playwright-Tests vorhanden
+- 🔄 **Weitere Optimierungen**: Laufend
+
+### Projekt-Info
+- **Repository**: github.com/bwl21/bwl-poll-event-services
+- **Version**: 0.3.2
+- **Sprache**: TypeScript + Vue 3
+- **Build-Tool**: Vite 7.3.1
+
 ## Funktionen
 
 ### 1. Event-Übersicht
@@ -39,12 +55,15 @@ Alle Antworten werden im ChurchTools Key-Value-Store gespeichert:
 #### Datenstruktur:
 ```typescript
 {
-    eventId: number,        // ID des Events
-    serviceId: number,      // ID des Dienstes
-    userId: number,         // ID des Benutzers (ermöglicht mehrere Benutzer pro Umfrage)
+    eventId: number,            // ID des Events
+    serviceId: number,          // ID des Dienstes
+    userId: number,             // ID des Benutzers
+    userName: string,           // Name des Benutzers (zur Lesbarkeit)
     response: 'yes' | 'maybe' | 'no' | null,  // Antwort des Benutzers
-    comment: string,        // Optionaler Kommentar
-    timestamp: string       // Zeitstempel der letzten Änderung (ISO 8601)
+    comment: string,            // Optionaler Kommentar
+    timestamp: string,          // Zeitstempel der ursprünglichen Eingabe (ISO 8601)
+    editedBy: string,           // Name des Bearbeiters (Admin oder Mitarbeiter selbst)
+    editedAt: string            // Zeitstempel der letzten Änderung (ISO 8601)
 }
 ```
 
@@ -57,7 +76,9 @@ Alle Antworten werden im ChurchTools Key-Value-Store gespeichert:
 - Pro Kombination aus `eventId`, `serviceId` und `userId` existiert genau ein Eintrag
 - Mehrere Benutzer können unabhängig voneinander ihre Verfügbarkeit für denselben Dienst angeben
 - Gibt ein Benutzer eine neue Antwort für einen bereits beantworteten Dienst ab, wird der bestehende Eintrag aktualisiert (nicht neu angelegt)
-- Der `timestamp` wird bei jeder Änderung aktualisiert
+- `timestamp` bleibt unverändert (zeigt ursprüngliche Eingabe-Zeit)
+- `editedBy` und `editedAt` werden bei jeder Änderung aktualisiert (Audit-Trail)
+- `userName` wird mit jedem Update synchronisiert
 
 #### Laden bestehender Eingaben:
 - Beim Öffnen der Seite werden die gespeicherten Antworten des aktuellen Benutzers geladen
@@ -72,6 +93,12 @@ Alle Antworten werden im ChurchTools Key-Value-Store gespeichert:
   - Vielleicht: Liste der Benutzer, die "Vielleicht" angegeben haben
   - Nein: Liste der Benutzer, die abgesagt haben
 - Kommentare anderer Benutzer werden ebenfalls angezeigt (sofern vorhanden)
+
+#### Audit-Trail (Änderungsverlauf):
+- `timestamp`: Zeigt, wann der Benutzer die Antwort ursprünglich eingegeben hat
+- `editedAt`: Zeigt, wann die Antwort zuletzt geändert wurde (durch Benutzer oder Admin)
+- `editedBy`: Zeigt, wer die Antwort zuletzt geändert hat
+- Beispiel: Mitarbeiter gibt "Ja" ein (timestamp), Admin ändert später zu "Nein" (editedBy=Admin, editedAt=neueres Datum)
 
 #### Anzeige bestehender Besetzungen:
 - Bereits in ChurchTools eingetragene Besetzungen für einen Dienst werden angezeigt
@@ -234,37 +261,71 @@ Die Erweiterung nutzt folgende ChurchTools-API-Endpunkte:
 - ChurchTools Key-Value-Store API für Datenpersistierung:
   - Kategorie `poll-responses`: Umfrageantworten
   - Kategorie `admin-config`: Admin-Konfiguration (Service-Sichtbarkeit)
-ue`: ^3.5.13 - Vue.js Framework
-- `primevue`: ^4.4.0 - PrimeVue UI-Komponenten
-- `vite`: ^7.1.2 - Build-Tool
-- `typescript`: ^5.9.2 - TypeScript-Compiler
-- `exceljs`: ^4.4.0 - Excel-Export-Bibliothek
-- `@churchtools/churchtools-client`: ^1.4.0 - ChurchTools API-Client
-- `vite`: ^7.1.2 - Build-Tool
-- `typescript`: ^5.9.2 - TypeScript-Compiler
+
+  ### Abhängigkeiten (package.json)
+  - `vue`: ^3.5.27 - Vue.js Framework
+  - `primevue`: ^4.5.4 - PrimeVue UI-Komponenten
+  - `@primeuix/themes`: ^2.0.3 - PrimeVue Themes
+  - `primeicons`: ^7.0.0 - Icon-Bibliothek
+  - `vite`: ^7.3.1 - Build-Tool
+  - `typescript`: ^5.9.2 - TypeScript-Compiler
+  - `xlsx`: ^0.18.5 - Excel-Export-Bibliothek
+  - `@churchtools/churchtools-client`: ^1.4.0 - ChurchTools API-Client
+  - `@vitejs/plugin-vue`: ^6.0.3 - Vue Plugin für Vite
+  - `rollup-plugin-visualizer`: ^6.0.5 - Build-Bundle-Analyse
+  - `@types/node`: ^24.3.0 - Node.js Typen
+  - `@playwright/test`: ^1.58.0 - E2E-Test-Framework
 
 ## Installation und Verwendung
 
+### Voraussetzungen
+- Node.js (v18+)
+- npm
+- Zugang zu einer ChurchTools-Instanz mit API-Zugriff
+- CORS aktiviert für die Development-URL (für local development)
+
 ### Entwicklung
-1. Repository klonen
-2. `.env` Datei erstellen (siehe `.env-example`)
-3. `npm install` ausführen
-4. `npm run dev` für Development-Server starten
+1. Repository klonen: `git clone <repo-url>`
+2. `.env` Datei erstellen basierend auf `.env-example`
+3. Abhängigkeiten installieren: `npm install`
+4. Development-Server mit Hot-Reload starten: `npm run dev`
+5. Lokal erreichbar unter `http://localhost:5173` (oder HTTPS für Safari)
+
+#### Hinweise für lokale Entwicklung:
+- **CORS-Konfiguration**: ChurchTools Admin > System Settings > Integrations > API > CORS
+- **Safari-Probleme**: HTTP funktioniert nicht zuverlässig. Lösung:
+  - Vite-Proxy konfigurieren (API-Calls gehen durch localhost)
+  - Oder Dev-Server mit HTTPS laufen lassen (mit mkcert)
+
+### Build
+- Produktiv-Build erstellen: `npm run build`
+- Build-Preview: `npm run preview`
 
 ### Deployment
-1. `npm run deploy` ausführen
-2. Erstelltes Package aus `releases` Ordner in ChurchTools hochladen
-3. Extension in ChurchTools aktivieren
+1. Produktiv-Build erstellen und packen: `npm run deploy`
+2. Package aus `releases/` Ordner in ChurchTools hochladen
+3. Extension im Admin-Bereich aktivieren
+
+### Testing
+- E2E-Tests ausführen: `npm run test:e2e`
+- Tests im UI-Modus: `npm run test:e2e:ui`
+- Tests im Debug-Modus: `npm run test:e2e:debug`
+- Tests mit Browser-Ansicht: `npm run test:e2e:headed`
 
 ## Konfiguration
 
 ### Environment-Variablen (.env)
 ```
-VITE_KEY=bwl-poll-event-services
-VITE_BASE_URL=https://ihre-instanz.church.tools
-VITE_USERNAME=ihr-benutzername (nur für Entwicklung)
-VITE_PASSWORD=ihr-passwort (nur für Entwicklung)
+VITE_KEY=bwl-poll-event-services                    # Extension Key (muss mit package.json übereinstimmen)
+VITE_BASE_URL=https://ihre-instanz.church.tools     # URL der ChurchTools-Instanz
+VITE_USERNAME=ihr-benutzername                      # Für Entwicklung (optional, für API-Tests)
+VITE_PASSWORD=ihr-passwort                          # Für Entwicklung (optional, für API-Tests)
 ```
+
+### Versionsverwaltung
+- Aktuelle Version: **0.3.2** (siehe `package.json`)
+- Version wird beim Deploy automatisch in das Package übernommen
+- Für neue Releases: Version in `package.json` erhöhen
 
 ## Berechtigungen
 Benutzer können nur Events und Dienste sehen, für die sie aufgrund ihrer Gruppenzugehörigkeit berechtigt sind.
@@ -294,7 +355,9 @@ Die Extension bietet einen separaten Admin-Bereich für berechtigte Benutzer:
   1. **Responses**: Übersicht aller Umfrageantworten
      - Tabellarische Darstellung aller Responses
      - Sortier- und Filterfunktionen
+     - Bearbeitungs-Funktion für einzelne Antworten (Antwort, Kommentar ändern)
      - Löschfunktion für einzelne Antworten
+     - Sichtbarkeit von Änderungsverlauf (editedBy, editedAt)
   2. **Service Config**: Konfiguration der Dienste
      - Anzeige ALLER Services aus ChurchTools Masterdata
      - Service-Namen und Kategorien (Service Groups) aus Masterdata
@@ -304,6 +367,7 @@ Die Extension bietet einen separaten Admin-Bereich für berechtigte Benutzer:
   3. **Export**: Excel-Export aller Antworten
      - Statistik (Anzahl Antworten, Anzahl Events)
      - Export-Button für alle Responses
+     - Export enthält auch editedBy und editedAt für Audit-Trail
 
 #### Service-Konfiguration:
 - Alle Services werden aus den Event-Masterdata geladen
@@ -314,3 +378,58 @@ Die Extension bietet einen separaten Admin-Bereich für berechtigte Benutzer:
 ## Zukünftige Erweiterungen (Optional)
 - Filtermöglichkeiten (z.B. nur Events einer bestimmten Gruppe)
 - Integration mit separater Disponenten-Extension
+- Benachrichtigungen bei Änderungen
+- Vereinfachte Disponenten-Ansicht
+- Automatische Besetzungsvorschläge basierend auf Verfügbarkeit
+
+## Projekt-Struktur (Zusammenfassung)
+
+### Verzeichnisstruktur
+```
+src/
+├── App.vue                    # Haupt-App mit Tab-Navigation (Umfrage/Admin)
+├── main.ts                    # Einstiegspunkt, Vite + PrimeVue-Init
+├── types.ts                   # Alle TypeScript-Typdefinitionen
+├── pollService.ts             # Business-Logik (Events, Storage, Filtering)
+├── exportService.ts           # Excel-Export-Funktionalität
+├── components/
+│   ├── EventCard.vue          # Event-Anzeige mit Services
+│   ├── ServiceRow.vue         # Service-Zeile mit Antwort-Buttons
+│   ├── AdminPanel.vue         # Admin-Tab mit verschachtelter Navigation
+│   ├── AdminResponses.vue     # Responses-Management (Admin)
+│   └── AdminConfig.vue        # Service-Config (Admin)
+├── utils/
+│   ├── kv-store.ts           # Key-Value-Store Wrapper
+│   └── ct-types.d.ts         # ChurchTools API-Typen
+```
+
+### Ablauf: Event-Abruf und Filterung
+1. **Event-Abruf**: `pollService.ts` -> ChurchTools API (`/events`)
+2. **User-Info**: Benutzer via `/whoami` + Gruppen via `/persons/{id}/groups`
+3. **Masterdata**: Service-Definitionen via `/event/masterdata`
+4. **Filterung**: Nur Services, für die Benutzer berechtigt ist
+5. **Speicherung**: Antworten im Key-Value-Store (poll-responses)
+
+### Admin-Funktionen
+- **Response-Verwaltung**: Alle Antworten einsehen/löschen
+- **Service-Config**: Sichtbarkeit von Votes pro Service konfigurieren
+- **Excel-Export**: Alle Responses exportieren
+
+## Changelog
+
+### Version 0.3.2 (aktuell)
+- Excel-Export mit `xlsx` Library
+- Verbesserte Error-Handling
+- E2E-Tests mit Playwright
+- Optimierte Performance
+
+### Version 0.3.0
+- Admin-Panel mit Response-Management
+- Service-Konfiguration
+- Verbesserte Benutzeroberfläche
+
+### Version 0.2.0
+- Event-Abruf und Filterung
+- Umfrage-Interface (Ja/Vielleicht/Nein)
+- Kommentar-Funktion
+- Datenspeicherung im KV-Store
