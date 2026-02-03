@@ -25,6 +25,7 @@ const props = defineProps<{
 const emit = defineEmits<{
     (e: 'response-deleted', entry: ServicePollEntry): void;
     (e: 'response-saved', entry: ServicePollEntry): void;
+    (e: 'config-changed'): void;
 }>();
 
 const activeTab = ref(0);
@@ -73,7 +74,7 @@ function handleExportAll() {
                     <i class="pi pi-sliders-h mr-2"></i>
                     <span>Service Config</span>
                 </template>
-                <AdminConfig :events="events" />
+                <AdminConfig :events="events" @config-changed="() => emit('config-changed')" />
             </TabPanel>
 
             <TabPanel>

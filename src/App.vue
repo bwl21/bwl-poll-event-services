@@ -240,6 +240,7 @@ onMounted(loadData);
                     :events="events"
                     @response-deleted="handleResponseDeleted"
                     @response-saved="handleResponseSavedAdmin"
+                    @config-changed="loadData"
                 />
             </TabPanel>
         </TabView>

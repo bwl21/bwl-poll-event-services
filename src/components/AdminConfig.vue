@@ -21,6 +21,10 @@ const props = defineProps<{
     events: EventWithServices[];
 }>();
 
+const emit = defineEmits<{
+    (e: 'config-changed'): void;
+}>();
+
 const toast = useToast();
 const loading = ref(true);
 const error = ref<string | null>(null);
@@ -134,6 +138,8 @@ async function handleToggleEnabled(config: AdminServiceConfig, newValue: boolean
             detail: `Status für ${config.serviceName || 'Service ' + config.serviceId} geändert`,
             life: 3000,
         });
+        // Notify parent to reload poll data
+        emit('config-changed');
     } catch (err) {
         config.enabled = previousValue; // Revert on error
         const errorMsg = err instanceof Error ? err.message : 'Unbekannter Fehler';
