@@ -174,6 +174,7 @@ onMounted(loadData);
                             dateFormat="dd.mm.yy"
                             showIcon
                             locale="de"
+                            :inline="false"
                             @date-select="loadData"
                         />
                     </div>

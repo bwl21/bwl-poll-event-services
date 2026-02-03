@@ -6,55 +6,10 @@ Diese Dokumentation richtet sich an **Administrator**, **Mitarbeiter** und **Pla
 
 ## 📋 Inhaltsverzeichnis
 
-1. [Administrator: Installation & Konfiguration](#administrator-installation--konfiguration)
-2. [Mitarbeiter: Umfrage ausfüllen](#mitarbeiter-umfrage-ausfüllen)
-3. [Planer: Auswertung & Disponierung](#planer-auswertung--disponierung)
+1. [Mitarbeiter: Umfrage ausfüllen](#mitarbeiter-umfrage-ausfüllen)
+2. [Planer: Auswertung & Disponierung](#planer-auswertung--disponierung)
+3. [Administrator: Installation, Konfiguration & Verwaltung](#administrator-installation-konfiguration--verwaltung)
 4. [FAQ & Fehlerbehebung](#faq--fehlerbehebung)
-
----
-
-## Administrator: Installation & Konfiguration
-
-### 1. Extension installieren
-
-#### Schritt 1: Package beziehen
-- Die Extension wird als Package-Datei bereitgestellt (Dateiname: `bwl-poll-event-services-x.x.x.zip`)
-- Das Package sollte vom Entwickler oder der IT bereitgestellt werden
-
-#### Schritt 2: In ChurchTools hochladen
-1. **ChurchTools Admin öffnen** → "System Settings" → "Integrations"
-2. Navigieren zu **"Custom Modules"** (oder "Extensions")
-3. Klick auf **"Upload Extension"** oder **"+ Add Extension"**
-4. Die heruntergeladene ZIP-Datei auswählen und hochladen
-5. Nach erfolgreichem Upload wird die Extension in der Liste angezeigt
-
-#### Schritt 3: Extension aktivieren
-1. Die neu installierte Extension **"bwl-poll-event-services"** in der Liste suchen
-2. Klick auf **"Activate"** oder **"Enable"**
-3. Die Extension wird nun allen Benutzern verfügbar gemacht
-
-### 2. Berechtigungen konfigurieren
-
-#### Admin-Berechtigung erteilen
-1. **ChurchTools Admin** → "Permissions" → "Roles"
-2. Eine Rolle wählen, die Admin-Zugriff haben soll
-3. Suchen nach: **"bwl-poll-event-services"** → **"admin-config"** (Lesezugriff)
-4. Die Berechtigung **aktivieren** (☑ Read access)
-5. Speichern
-
-> **Tipp:** Normalerweise erhalten Planer/Disponenten diese Berechtigung.
-
-#### Benutzer mit Gruppenzugehörigkeit
-- Alle Benutzer sehen automatisch nur die Dienste ihrer Gruppen
-- Keine separaten Berechtigungen nötig
-- Die Berechtigung basiert auf der Gruppenzugehörigkeit in ChurchTools
-
-### 3. Berechtigungscheck durchführen (optional)
-
-Nach der Installation können Sie testen:
-1. Als normaler Benutzer anmelden
-2. Die Extension öffnen
-3. Es sollten nur Events mit Diensten Ihrer Gruppen angezeigt werden
 
 ---
 
@@ -75,6 +30,9 @@ Die Extension zeigt standardmäßig die nächsten **90 Tage** an.
 - **Anzahl Tage**: Die Spannweite anpassen (z.B. "30 Tage" für 1 Monat)
 
 > **Hinweis:** Nur Events mit Diensten, für die Sie zuständig sind, werden angezeigt.
+
+**Ansicht:**
+![Umfrage-Übersicht](screenshots/01-desktop-umfrage-overview.png)
 
 #### 3. Events und Dienste sehen
 Die Umfrage zeigt:
@@ -101,6 +59,9 @@ Die Umfrage zeigt:
 [✓ Ja] [? Vielleicht] [✗ Nein]
 [Kommentar: Nur bis 12 Uhr_____________]
 ```
+
+**Ansicht (Tabellen-Layout):**
+![Tabellen-Ansicht](screenshots/02-desktop-table-view.png)
 
 #### 5. Kommentar hinzufügen (optional)
 Unter jedem Dienst gibt es ein **Kommentarfeld**, um zusätzliche Informationen zu geben:
@@ -170,22 +131,14 @@ Die Admin-Oberfläche hat **3 Unterbereiche:**
 - **Löschen**: Einzelne Antworten entfernen (z.B. bei Stornierung)
 - **Exportieren**: Alle Antworten als Excel-Datei herunterladen (siehe Export-Tab)
 
+**Ansicht:**
+![Admin Responses](screenshots/03-desktop-admin-responses.png)
+
 **Audit-Trail (Änderungsverlauf):**
 - **Eingabe-Zeit**: Wann der Mitarbeiter die Antwort ursprünglich eingegeben hat
 - **Bearbeitungs-Zeit**: Wann die Antwort zuletzt geändert wurde (durch Sie oder den Mitarbeiter selbst)
 - **Bearbeitet von**: Wer hat die Antwort zuletzt geändert (Admin-Name oder Mitarbeiter-Name)
 - Beispiel: Mitarbeiter gibt "Ja" ein (31.1. 15:30), Sie ändern später zu "Nein" → "Bearbeitet von: Planer1" (31.1. 16:00)
-
-**Beispiel:**
-```
-┌──────────┬──────────────┬────────┬────────┬──────────────┬───────────────┐
-│ Event    │ Dienst       │ Nutzer │ Antw.  │ Kommentar    │ Zeitstempel   │
-├──────────┼──────────────┼────────┼────────┼──────────────┼───────────────┤
-│ GD 2.2.  │ Lobpreis-Led │ Anna   │ Ja     │ Bis 12h      │ 31.1. 15:30   │
-│ GD 2.2.  │ Lobpreis-Led │ Peter  │ Nein   │              │ 1.2. 10:00    │
-│ GD 2.2.  │ Keyboard     │ Lisa   │ Vllt   │ Falls Auto   │ 31.1. 14:22   │
-└──────────┴──────────────┴────────┴────────┴──────────────┴───────────────┘
-```
 
 #### b) **Service Config** - Dienste konfigurieren
 
@@ -198,11 +151,18 @@ Die Admin-Oberfläche hat **3 Unterbereiche:**
 - Spalten: Service-ID, Kategorie, Service-Name, Votes sichtbar
 
 **Funktionen:**
+- **Toggle für "Enabled"**: 
+  - ☑ **An** = Service wird in der Umfrage angezeigt
+  - ☐ **Aus** = Service ist deaktiviert und nicht sichtbar
 - **Toggle für "Votes sichtbar"**: 
   - ☑ **An** = Mitarbeiter sehen die Antworten anderer
   - ☐ **Aus** = Mitarbeiter sehen nur die bereits gebuchten Personen
   
+
 **Hinweis:** Diese Konfiguration wird automatisch synchronisiert mit ChurchTools Masterdata.
+
+**Ansicht:**
+![Admin Service Config](screenshots/04-desktop-admin-config.png)
 
 #### c) **Export** - Daten herunterladen
 
@@ -231,6 +191,10 @@ Die Admin-Oberfläche hat **3 Unterbereiche:**
 - Berichte für Leitung erstellen
 - Verfügbarkeitsanalyse durchführen
 
+**Ansicht:**
+- ![Desktop](screenshots/05-desktop-admin-export.png)
+- Desktop Export-Tab
+
 ---
 
 ### 3. Disponierung: Best Practice
@@ -257,6 +221,51 @@ Die Admin-Oberfläche hat **3 Unterbereiche:**
 
 ---
 
+## Administrator: Installation, Konfiguration & Verwaltung
+
+### 1. Extension installieren
+
+#### Schritt 1: Package beziehen
+- Die Extension wird als Package-Datei bereitgestellt (Dateiname: `bwl-poll-event-services-x.x.x.zip`)
+- Das Package sollte vom Entwickler oder der IT bereitgestellt werden
+
+#### Schritt 2: In ChurchTools hochladen
+1. **ChurchTools Admin öffnen** → "System Settings" → "Integrations"
+2. Navigieren zu **"Custom Modules"** (oder "Extensions")
+3. Klick auf **"Upload Extension"** oder **"+ Add Extension"**
+4. Die heruntergeladene ZIP-Datei auswählen und hochladen
+5. Nach erfolgreichem Upload wird die Extension in der Liste angezeigt
+
+#### Schritt 3: Extension aktivieren
+1. Die neu installierte Extension **"bwl-poll-event-services"** in der Liste suchen
+2. Klick auf **"Activate"** oder **"Enable"**
+3. Die Extension wird nun allen Benutzern verfügbar gemacht
+
+### 2. Berechtigungen konfigurieren
+
+#### Admin-Berechtigung erteilen
+1. **ChurchTools Admin** → "Permissions" → "Roles"
+2. Eine Rolle wählen, die Admin-Zugriff haben soll
+3. Suchen nach: **"bwl-poll-event-services"** → **"admin-config"** (Lesezugriff)
+4. Die Berechtigung **aktivieren** (☑ Read access)
+5. Speichern
+
+> **Tipp:** Normalerweise erhalten Planer/Disponenten diese Berechtigung.
+
+#### Benutzer mit Gruppenzugehörigkeit
+- Alle Benutzer sehen automatisch nur die Dienste ihrer Gruppen
+- Keine separaten Berechtigungen nötig
+- Die Berechtigung basiert auf der Gruppenzugehörigkeit in ChurchTools
+
+### 3. Berechtigungscheck durchführen (optional)
+
+Nach der Installation können Sie testen:
+1. Als normaler Benutzer anmelden
+2. Die Extension öffnen
+3. Es sollten nur Events mit Diensten Ihrer Gruppen angezeigt werden
+
+---
+
 ## FAQ & Fehlerbehebung
 
 ### Häufig gestellte Fragen
@@ -276,7 +285,7 @@ Die Admin-Oberfläche hat **3 Unterbereiche:**
 
 #### **F: Ich sehe die Admin-Funktionen nicht.**
 **A:**
-- Sie müssen Admin-Berechtigungen haben (siehe Admin-Setup oben)
+- Sie müssen Admin-Berechtigungen haben (siehe [Administrator: Installation, Konfiguration & Verwaltung](#administrator-installation-konfiguration--verwaltung) oben)
 - Fragen Sie Ihren Administrator, die Berechtigung zu erteilen
 - Nach Berechtigung-Erteilung: Seite neu laden
 
@@ -362,68 +371,6 @@ Die Admin-Oberfläche hat **3 Unterbereiche:**
 
 ---
 
-## 📱 Screenshots (Wireframes)
-
-### Mobile Darstellung
-
-```
-┌──────────────────────────┐
-│ Dienst-Umfrage   [Admin] │
-├──────────────────────────┤
-│ Startdatum: [2.2.2025]   │
-│ Tage: [90]        [OK]   │
-│ [📊 Excel Export]        │
-├──────────────────────────┤
-│                          │
-│ So, 2.2.2025             │
-│ Gottesdienst             │
-├──────────────────────────┤
-│ Lobpreis-Leitung         │
-│ [✓] [?] [✗]              │
-│ [Kommentar...]           │
-│ ✓: Besetzt: Max M.       │
-│ ✓: Anna, Peter           │
-│ ?: Lisa                  │
-│ 💬 Anna: "Nur bis 12h"   │
-├──────────────────────────┤
-│ Keyboard                 │
-│ [✓] [?] [✗]              │
-│ [Kommentar...]           │
-│ Offen                    │
-│ ?: Tom, Sarah            │
-├──────────────────────────┤
-│ So, 9.2.2025             │
-│ ...                      │
-└──────────────────────────┘
-```
-
-### Desktop Darstellung
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ Dienst-Umfrage       Admin        [Admin nur für Admins]                     │
-├─────────────────────────────────────────────────────────────────────────────┤
-│ Startdatum: [2.2.2025]  Tage: [90]  [OK]  [📊 Excel Export]                 │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│ So, 2.2.2025 - Gottesdienst                                                │
-├────────────────┬──────────────┬────────────────┬──────────────────────────┤
-│ Dienst         │ Meine Antw.  │ Besetzung      │ Andere Antworten         │
-├────────────────┼──────────────┼────────────────┼──────────────────────────┤
-│ Lobpreis-Led   │ [✓][?][✗]    │ Max M. ✓       │ ✓ Anna, Peter            │
-│                │ [Kom____]    │                │ ? Lisa: "Nur bis 12h"    │
-├────────────────┼──────────────┼────────────────┼──────────────────────────┤
-│ Keyboard       │ [✓][?][✗]    │ Offen          │ ? Tom, Sarah             │
-│                │ [Kom____]    │                │ ✗ John                   │
-├────────────────┴──────────────┴────────────────┴──────────────────────────┤
-│ So, 9.2.2025 - Gottesdienst                                                │
-├────────────────┬──────────────┬────────────────┬──────────────────────────┤
-│ ...            │              │                │                          │
-└────────────────┴──────────────┴────────────────┴──────────────────────────┘
-```
-
----
-
 ## 💡 Tipps & Tricks
 
 ### Für Mitarbeiter:
@@ -445,6 +392,29 @@ Die Admin-Oberfläche hat **3 Unterbereiche:**
 
 ---
 
+## 📸 Bildschirmfotos
+
+### Desktop-Ansicht
+- [Umfrage-Übersicht](screenshots/01-desktop-umfrage-overview.png)
+- [Tabellarische Service-Ansicht](screenshots/02-desktop-table-view.png)
+- [Admin: Responses](screenshots/03-desktop-admin-responses.png)
+- [Admin: Service-Konfiguration](screenshots/04-desktop-admin-config.png)
+- [Admin: Excel-Export](screenshots/05-desktop-admin-export.png)
+
+### Mobile-Ansicht
+- [Umfrage-Übersicht (Mobile)](screenshots/01-mobile-umfrage-overview.png)
+- [Tabellarische Service-Ansicht (Mobile)](screenshots/02-mobile-table-view.png)
+- [Admin: Responses (Mobile)](screenshots/03-mobile-admin-responses.png)
+- [Admin: Service-Konfiguration (Mobile)](screenshots/04-mobile-admin-config.png)
+
+### Tablet-Ansicht
+- [Umfrage-Übersicht (Tablet)](screenshots/06-tablet-umfrage-overview.png)
+- [Tabellarische Service-Ansicht (Tablet)](screenshots/07-tablet-table-view.png)
+- [Admin: Responses (Tablet)](screenshots/08-tablet-admin-responses.png)
+- [Admin: Service-Konfiguration (Tablet)](screenshots/09-tablet-admin-config.png)
+
+---
+
 ## 📞 Weitere Ressourcen
 
 - **ChurchTools Dokumentation**: https://www.church.tools/help
@@ -454,4 +424,3 @@ Die Admin-Oberfläche hat **3 Unterbereiche:**
 ---
 
 **Version 0.3.2** | Letzte Aktualisierung: Jan 2025
-
