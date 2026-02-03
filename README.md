@@ -473,21 +473,24 @@ npm run test:e2e:ui -- screenshots.spec.ts
 #### Generierte Dateien
 Screenshots werden automatisch in `docs/screenshots/` gespeichert:
 
-```
-docs/screenshots/
-├── 01-mobile-umfrage-overview.png          # Mobile Übersicht
-├── 02-mobile-service-row.png               # Mobile Service-Zeile
-├── 03-mobile-admin-tab.png                 # Mobile Admin
-├── 04-mobile-timerange-settings.png        # Mobile Zeitraum
-├── 05-desktop-umfrage-overview.png         # Desktop Übersicht
-├── 06-desktop-table-view.png               # Desktop Tabelle
-├── 07-desktop-admin-responses.png          # Admin Responses
-├── 08-desktop-admin-config.png             # Admin Config
-├── 09-desktop-admin-export.png             # Admin Export
-├── 10a-responsive-mobile-event.png         # Responsive Vergleich Mobile
-├── 10b-responsive-desktop-event.png        # Responsive Vergleich Desktop
-└── 11-tablet-umfrage-overview.png          # Tablet Ansicht
-```
+**Desktop (Chrome)**
+- ![01-desktop-umfrage-overview.png](docs/screenshots/01-desktop-umfrage-overview.png) - Desktop Übersicht
+- ![02-desktop-table-view.png](docs/screenshots/02-desktop-table-view.png) - Desktop Tabellen-Layout
+- ![03-desktop-admin-responses.png](docs/screenshots/03-desktop-admin-responses.png) - Admin: Responses
+- ![04-desktop-admin-config.png](docs/screenshots/04-desktop-admin-config.png) - Admin: Service-Konfiguration
+- ![05-desktop-admin-export.png](docs/screenshots/05-desktop-admin-export.png) - Admin: Excel-Export
+
+**Mobile (Chrome)**
+- ![01-mobile-umfrage-overview.png](docs/screenshots/01-mobile-umfrage-overview.png) - Mobile Übersicht
+- ![02-mobile-table-view.png](docs/screenshots/02-mobile-table-view.png) - Mobile Tabellen-Layout
+- ![03-mobile-admin-responses.png](docs/screenshots/03-mobile-admin-responses.png) - Mobile: Admin Responses
+- ![04-mobile-admin-config.png](docs/screenshots/04-mobile-admin-config.png) - Mobile: Admin Service-Config
+
+**Tablet (Chrome)**
+- ![06-tablet-umfrage-overview.png](docs/screenshots/06-tablet-umfrage-overview.png) - Tablet Übersicht
+- ![07-tablet-table-view.png](docs/screenshots/07-tablet-table-view.png) - Tablet Tabellen-Layout
+- ![08-tablet-admin-responses.png](docs/screenshots/08-tablet-admin-responses.png) - Tablet: Admin Responses
+- ![09-tablet-admin-config.png](docs/screenshots/09-tablet-admin-config.png) - Tablet: Admin Service-Config
 
 #### In USERMANUAL.md einfügen
 
