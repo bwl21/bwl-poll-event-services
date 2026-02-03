@@ -144,9 +144,13 @@ export async function fetchEventsWithServices(
             enabledServicesMap.set(config.serviceId, config.enabled);
         }
         debugLog('Service configs loaded:', {
+            count: serviceConfigs.length,
             enabled: Array.from(enabledServicesMap.entries()),
             votesVisible: Array.from(votesVisibilityMap.entries()),
         });
+        
+        // Log all services being processed
+        debugLog('All services from masterdata:', allServices.map(s => ({ id: s.id, name: s.name })));
 
         // Filter events that have services matching user's groups
         const eventsWithServices: EventWithServices[] = events
@@ -492,12 +496,15 @@ export async function getServiceConfigs(): Promise<AdminServiceConfig[]> {
         );
 
         // Filter only service config entries and set defaults for missing fields
-        return values
-            .filter((v) => v.type === 'service-config' || v.serviceId !== undefined)
+        const configs = values
+            .filter((v) => v.type === 'service-config' && v.serviceId !== undefined)
             .map((v) => ({
                 ...v,
                 enabled: v.enabled ?? true, // Default to enabled for backward compatibility
-            }));
+            })) as AdminServiceConfig[];
+        
+        debugLog('Loaded service configs:', configs.length, 'configs');
+        return configs;
     } catch (error) {
         console.error('Error loading service configs:', error);
         return [];
