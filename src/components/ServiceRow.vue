@@ -37,6 +37,7 @@ const selectedResponse = ref<PollResponse>(props.userResponse?.response || null)
 const comment = ref(props.userResponse?.comment || '');
 const saving = ref(false);
 const statusMessage = ref<{ type: 'success' | 'error'; text: string } | null>(null);
+const showCommentForm = ref(false);
 
 // Debounce timer for comment
 let commentTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -84,6 +85,7 @@ async function handleResponse(response: PollResponse) {
 async function withdrawResponse() {
     selectedResponse.value = null;
     comment.value = '';
+    showCommentForm.value = false;
     await saveResponse();
 }
 
@@ -160,53 +162,60 @@ const allComments = computed(() => {
             <div class="button-group">
                 <Button
                     icon="pi pi-check"
-                    :label="layout === 'table' ? '' : 'Ja'"
+                    label="Ja"
                     :severity="selectedResponse === 'yes' ? undefined : 'secondary'"
                     :outlined="selectedResponse !== 'yes'"
                     class="btn-yes"
                     :class="{ active: selectedResponse === 'yes' }"
                     @click="handleResponse('yes')"
                     :loading="saving && selectedResponse === 'yes'"
-                    v-tooltip.top="'Ja'"
                 />
                 <Button
                     icon="pi pi-question"
+                    label="Vllt"
                     :severity="selectedResponse === 'maybe' ? 'warn' : 'secondary'"
                     :outlined="selectedResponse !== 'maybe'"
                     class="btn-maybe"
                     :class="{ active: selectedResponse === 'maybe' }"
                     @click="handleResponse('maybe')"
                     :loading="saving && selectedResponse === 'maybe'"
-                    v-tooltip.top="'Vielleicht'"
                 />
                 <Button
                     icon="pi pi-times"
+                    label="Nein"
                     :severity="selectedResponse === 'no' ? 'danger' : 'secondary'"
                     :outlined="selectedResponse !== 'no'"
                     class="btn-no"
                     :class="{ active: selectedResponse === 'no' }"
                     @click="handleResponse('no')"
                     :loading="saving && selectedResponse === 'no'"
-                    v-tooltip.top="'Nein'"
+                />
+                <Button
+                    icon="pi pi-pencil"
+                    text
+                    severity="info"
+                    class="btn-comment"
+                    @click="showCommentForm = true"
                 />
                 <Button
                     icon="pi pi-trash"
                     severity="danger"
                     text
-                    outlined
+                    class="btn-delete"
                     @click="withdrawResponse"
                     :loading="saving"
                     :disabled="!selectedResponse && !comment"
-                    v-tooltip.top="'Antwort zurückziehen'"
                 />
             </div>
             <Textarea
+                v-if="comment || showCommentForm"
                 v-model="comment"
-                placeholder="Kommentar"
-                rows="1"
+                placeholder="Kommentar..."
+                rows="2"
                 autoResize
                 class="comment-input"
                 @input="handleCommentInput"
+                @blur="showCommentForm = comment.trim().length > 0"
             />
             <small v-if="statusMessage" :class="['status-msg', statusMessage.type]">
                 {{ statusMessage.text }}
@@ -270,6 +279,7 @@ const allComments = computed(() => {
                 :severity="selectedResponse === 'yes' ? undefined : 'secondary'"
                 :outlined="selectedResponse !== 'yes'"
                 class="btn-yes"
+                :class="{ active: selectedResponse === 'yes' }"
                 @click="handleResponse('yes')"
                 :loading="saving && selectedResponse === 'yes'"
             />
@@ -279,6 +289,7 @@ const allComments = computed(() => {
                 :severity="selectedResponse === 'maybe' ? 'warn' : 'secondary'"
                 :outlined="selectedResponse !== 'maybe'"
                 class="btn-maybe"
+                :class="{ active: selectedResponse === 'maybe' }"
                 @click="handleResponse('maybe')"
                 :loading="saving && selectedResponse === 'maybe'"
             />
@@ -288,26 +299,37 @@ const allComments = computed(() => {
                 :severity="selectedResponse === 'no' ? 'danger' : 'secondary'"
                 :outlined="selectedResponse !== 'no'"
                 class="btn-no"
+                :class="{ active: selectedResponse === 'no' }"
                 @click="handleResponse('no')"
                 :loading="saving && selectedResponse === 'no'"
             />
             <Button
+                icon="pi pi-pencil"
+                text
+                severity="info"
+                class="btn-comment"
+                @click="showCommentForm = true"
+            />
+            <Button
                 icon="pi pi-trash"
                 severity="danger"
+                text
+                class="btn-delete"
                 @click="withdrawResponse"
                 :loading="saving"
                 :disabled="!selectedResponse && !comment"
-                class="btn-withdraw"
             />
         </div>
 
         <Textarea
+            v-if="comment || showCommentForm"
             v-model="comment"
-            placeholder="Kommentar (optional)"
-            rows="1"
+            placeholder="Kommentar..."
+            rows="3"
             autoResize
             class="comment-input mobile"
             @input="handleCommentInput"
+            @blur="showCommentForm = comment.trim().length > 0"
         />
 
         <small v-if="statusMessage" :class="['status-msg', statusMessage.type]">
@@ -349,6 +371,10 @@ const allComments = computed(() => {
     vertical-align: top;
 }
 
+.response-buttons {
+    flex-shrink: 0;
+}
+
 .service-name {
     width: 110px;
     min-width: 110px;
@@ -360,10 +386,23 @@ const allComments = computed(() => {
     display: flex;
     gap: 4px;
     margin-bottom: 8px;
+    align-items: center;
 }
 
 .button-group .p-button {
     flex: 1;
+}
+
+.btn-comment {
+    margin-left: auto;
+    padding: 0.25rem !important;
+    min-width: auto !important;
+}
+
+.btn-delete {
+    margin-left: 12px;
+    padding: 0.25rem !important;
+    min-width: auto !important;
 }
 
 .btn-yes {
@@ -373,7 +412,11 @@ const allComments = computed(() => {
 .btn-yes.active {
     background-color: #4caf50 !important;
     border-color: #4caf50 !important;
-    color: #fff !important;
+    color: #000 !important;
+}
+
+.btn-yes.active :deep(*) {
+    color: #000 !important;
 }
 
 .btn-yes:hover {
@@ -387,7 +430,11 @@ const allComments = computed(() => {
 .btn-maybe.active {
     background-color: #ff9800 !important;
     border-color: #ff9800 !important;
-    color: #fff !important;
+    color: #000 !important;
+}
+
+.btn-maybe.active :deep(*) {
+    color: #000 !important;
 }
 
 .btn-maybe:hover {
@@ -401,11 +448,19 @@ const allComments = computed(() => {
 .btn-no.active {
     background-color: #f44336 !important;
     border-color: #f44336 !important;
-    color: #fff !important;
+    color: #000 !important;
+}
+
+.btn-no.active :deep(*) {
+    color: #000 !important;
 }
 
 .btn-no:hover {
     background-color: rgba(244, 67, 54, 0.1) !important;
+}
+
+.btn-comment {
+    min-width: 44px;
 }
 
 .comment-input {
@@ -437,6 +492,10 @@ const allComments = computed(() => {
 .other-responses {
     font-size: 0.875rem;
     color: #666;
+    vertical-align: top;
+    width: 300px;
+    min-width: 300px;
+    max-width: 300px;
 }
 
 .response-group {
@@ -476,7 +535,7 @@ const allComments = computed(() => {
 
 /* Card styles (mobile) */
 .service-card {
-    padding: 16px;
+    padding: 12px;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     background: #fafafa;
@@ -485,8 +544,10 @@ const allComments = computed(() => {
 .service-card-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 12px;
+    gap: 4px;
+    flex-wrap: wrap;
 }
 
 .button-group.mobile {
@@ -494,11 +555,6 @@ const allComments = computed(() => {
 }
 
 .button-group.mobile .p-button {
-    flex: 1;
-    min-height: 44px;
-}
-
-.button-group.mobile .btn-withdraw {
     flex: 1;
     min-height: 44px;
 }
