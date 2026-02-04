@@ -51,6 +51,14 @@ const userResponses = computed(() => {
     return allResponses.value.filter((r) => r.userId === currentUser.value!.id);
 });
 
+// Helper: Convert local date to YYYY-MM-DD format (avoid timezone offset issues)
+function getLocalDateString(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 async function loadData() {
     loading.value = true;
     error.value = null;
@@ -58,7 +66,7 @@ async function loadData() {
     try {
         currentUser.value = await getCurrentUser();
 
-        const startStr = startDate.value.toISOString().split('T')[0];
+        const startStr = getLocalDateString(startDate.value);
         const [eventsData, responsesData, adminStatus] = await Promise.all([
             fetchEventsWithServices(startStr, days.value),
             loadAllPollResponses(),
@@ -95,6 +103,23 @@ function handleResponseSaved(entry: ServicePollEntry) {
 
 function handleExport() {
     exportToExcel(events.value, allResponses.value);
+}
+
+function copyURLToClipboard() {
+    // Get current settings
+    const startStr = getLocalDateString(startDate.value);
+    const baseURL = window.location.origin + window.location.pathname;
+    const urlWithParams = `${baseURL}?start=${startStr}&days=${days.value}`;
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(urlWithParams).then(() => {
+        // Show success message
+        const toast = document.querySelector('[role="log"]');
+        debugLog('URL copied to clipboard:', urlWithParams);
+        // Optional: Show a brief notification (you could use a toast here if desired)
+    }).catch(err => {
+        console.error('Failed to copy URL:', err);
+    });
 }
 
 function handleResponseDeleted(entry: ServicePollEntry) {
@@ -196,6 +221,16 @@ onMounted(loadData);
                             severity="success"
                             @click="handleExport"
                             :disabled="events.length === 0"
+                        />
+                    </div>
+                    <div class="control-group">
+                        <Button
+                            icon="pi pi-copy"
+                            severity="info"
+                            text
+                            rounded
+                            @click="copyURLToClipboard"
+                            title="URL mit aktuellen Einstellungen kopieren"
                         />
                     </div>
                 </div>
