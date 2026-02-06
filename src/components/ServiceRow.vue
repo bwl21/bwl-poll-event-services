@@ -495,9 +495,10 @@ const allComments = computed(() => {
 }
 
 .assignment {
-    white-space: nowrap;
     width: 150px;
     min-width: 150px;
+    word-wrap: break-word;
+    word-break: break-word;
 }
 
 .other-responses {
