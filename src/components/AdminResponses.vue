@@ -282,31 +282,31 @@ async function handleDelete() {
             <Column header="Aktionen" style="width: 160px">
                 <template #body="slotProps">
                     <Button 
-                        icon="pi pi-plus" 
-                        severity="success" 
-                        text 
-                        size="small"
-                        @click="openAddDialog(slotProps.data.eventId, slotProps.data.serviceId)"
-                        title="Antwort hinzufügen"
-                    />
-                    <Button 
-                        v-if="slotProps.data.userName && slotProps.data.userName !== '-'"
-                        icon="pi pi-pencil" 
-                        severity="info" 
-                        text 
-                        size="small"
-                        @click="openEditDialog(slotProps.data)"
-                        title="Antwort bearbeiten"
-                    />
-                    <Button 
-                        v-if="slotProps.data.userName && slotProps.data.userName !== '-'"
-                        icon="pi pi-trash" 
-                        severity="danger" 
-                        text 
-                        size="small"
-                        @click="confirmDelete(slotProps.data)"
-                        title="Antwort löschen"
-                    />
+                         icon="pi pi-plus" 
+                         severity="success" 
+                         text 
+                         size="small"
+                         @click="openAddDialog(slotProps.data.eventId, slotProps.data.serviceId)"
+                         v-tooltip="'Neue Antwort hinzufügen'"
+                     />
+                     <Button 
+                         v-if="slotProps.data.userName && slotProps.data.userName !== '-'"
+                         icon="pi pi-pencil" 
+                         severity="info" 
+                         text 
+                         size="small"
+                         @click="openEditDialog(slotProps.data)"
+                         v-tooltip="'Diese Antwort bearbeiten'"
+                     />
+                     <Button 
+                         v-if="slotProps.data.userName && slotProps.data.userName !== '-'"
+                         icon="pi pi-trash" 
+                         severity="danger" 
+                         text 
+                         size="small"
+                         @click="confirmDelete(slotProps.data)"
+                         v-tooltip="'Diese Antwort löschen'"
+                     />
                 </template>
             </Column>
         </DataTable>
@@ -324,17 +324,19 @@ async function handleDelete() {
             </p>
             <template #footer>
                 <Button 
-                    label="Abbrechen" 
-                    text 
-                    @click="deleteDialogVisible = false"
-                    :disabled="deleting"
-                />
-                <Button 
-                    label="Löschen" 
-                    severity="danger" 
-                    @click="handleDelete"
-                    :loading="deleting"
-                />
+                     label="Abbrechen" 
+                     text 
+                     @click="deleteDialogVisible = false"
+                     :disabled="deleting"
+                     v-tooltip="'Abbrechen ohne zu löschen'"
+                 />
+                 <Button 
+                     label="Löschen" 
+                     severity="danger" 
+                     @click="handleDelete"
+                     :loading="deleting"
+                     v-tooltip="'Antwort unwiderruflich löschen'"
+                 />
             </template>
         </Dialog>
 
@@ -390,17 +392,19 @@ async function handleDelete() {
 
             <template #footer>
                 <Button 
-                    label="Abbrechen" 
-                    text 
-                    @click="editDialogVisible = false"
-                    :disabled="saving"
-                />
-                <Button 
-                    label="Speichern" 
-                    severity="success" 
-                    @click="saveEditingResponse"
-                    :loading="saving"
-                />
+                     label="Abbrechen" 
+                     text 
+                     @click="editDialogVisible = false"
+                     :disabled="saving"
+                     v-tooltip="'Änderungen verwerfen und Dialog schließen'"
+                 />
+                 <Button 
+                     label="Speichern" 
+                     severity="success" 
+                     @click="saveEditingResponse"
+                     :loading="saving"
+                     v-tooltip="'Antwort speichern'"
+                 />
             </template>
         </Dialog>
     </div>

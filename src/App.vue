@@ -177,11 +177,13 @@ onMounted(loadData);
         </header>
 
         <TabView v-model:activeIndex="activeTab">
-            <TabPanel>
-                <template #header>
-                    <i class="pi pi-list mr-2"></i>
-                    <span>Umfrage</span>
-                </template>
+             <TabPanel>
+                 <template #header>
+                     <div v-tooltip="'Hier kannst du die Dienste für dich eintragen'">
+                         <i class="pi pi-list mr-2"></i>
+                         <span>Umfrage</span>
+                     </div>
+                 </template>
                 
                 <p class="subtitle">
                     Bitte trage ein, für welche Dienste du verfügbar bist.
@@ -192,47 +194,50 @@ onMounted(loadData);
 
                 <div class="poll-controls">
                     <div class="control-group">
-                        <label for="startDate">Startdatum</label>
-                        <DatePicker
-                            id="startDate"
-                            v-model="startDate"
-                            dateFormat="dd.mm.yy"
-                            showIcon
-                            locale="de"
-                            :inline="false"
-                            @date-select="loadData"
-                        />
-                    </div>
-                    <div class="control-group">
-                        <label for="days">Anzahl Tage</label>
-                        <InputNumber
-                            id="days"
-                            v-model="days"
-                            :min="1"
-                            :max="365"
-                            showButtons
-                            @update:modelValue="loadData"
-                        />
-                    </div>
+                         <label for="startDate" v-tooltip="'Startdatum für die Anzeige der Dienste'">Startdatum</label>
+                         <DatePicker
+                             id="startDate"
+                             v-model="startDate"
+                             dateFormat="dd.mm.yy"
+                             showIcon
+                             locale="de"
+                             :inline="false"
+                             @date-select="loadData"
+                             v-tooltip="'Wähle das Startdatum für die Dienste aus'"
+                         />
+                     </div>
+                     <div class="control-group">
+                         <label for="days" v-tooltip="'Anzahl der Tage ab Startdatum'">Anzahl Tage</label>
+                         <InputNumber
+                             id="days"
+                             v-model="days"
+                             :min="1"
+                             :max="365"
+                             showButtons
+                             @update:modelValue="loadData"
+                             v-tooltip="'Gib die Anzahl der Tage ein (1-365)'"
+                         />
+                     </div>
                     <div class="control-group export-btn">
-                        <Button
-                            label="Excel Export"
-                            icon="pi pi-file-excel"
-                            severity="success"
-                            @click="handleExport"
-                            :disabled="events.length === 0"
-                        />
-                    </div>
-                    <div class="control-group">
-                        <Button
-                            icon="pi pi-copy"
-                            severity="info"
-                            text
-                            rounded
-                            @click="copyURLToClipboard"
-                            title="URL mit aktuellen Einstellungen kopieren"
-                        />
-                    </div>
+                         <Button
+                             label="Excel Export"
+                             icon="pi pi-file-excel"
+                             severity="success"
+                             @click="handleExport"
+                             :disabled="events.length === 0"
+                             v-tooltip="'Alle Dienste und Antworten als Excel-Datei exportieren'"
+                         />
+                     </div>
+                     <div class="control-group">
+                         <Button
+                             icon="pi pi-copy"
+                             severity="info"
+                             text
+                             rounded
+                             @click="copyURLToClipboard"
+                             v-tooltip="'Aktuelle URL mit Einstellungen in Zwischenablage kopieren'"
+                         />
+                     </div>
                 </div>
 
                 <div v-if="loading" class="loading-container">
@@ -267,8 +272,10 @@ onMounted(loadData);
 
             <TabPanel v-if="userIsAdmin">
                 <template #header>
-                    <i class="pi pi-cog mr-2"></i>
-                    <span>Admin</span>
+                    <div v-tooltip="'Admin-Funktionen zur Verwaltung von Umfragen und Konfiguration'">
+                        <i class="pi pi-cog mr-2"></i>
+                        <span>Admin</span>
+                    </div>
                 </template>
                 
                 <AdminPanel
@@ -286,6 +293,17 @@ onMounted(loadData);
         </footer>
     </div>
 </template>
+
+<!-- Global tooltip styling (no scoped) -->
+<style>
+.v-popper--theme-tooltip .v-popper__inner {
+    padding: 2px 4px !important;
+    max-width: 200px;
+    word-wrap: break-word;
+    white-space: normal;
+    text-align: center;
+}
+</style>
 
 <style scoped>
 .poll-app {

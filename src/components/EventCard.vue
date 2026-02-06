@@ -103,14 +103,14 @@ function getOtherResponsesForService(serviceId: number): ServicePollEntry[] {
                     <span class="event-name">{{ event.name }}</span>
                     <span class="event-time">{{ formattedTime }} Uhr</span>
                     <Button
-                        icon="pi pi-link"
-                        class="link-button"
-                        severity="secondary"
-                        text
-                        rounded
-                        @click="openEventInChurchTools"
-                        title="Event in ChurchTools öffnen"
-                    />
+                         icon="pi pi-link"
+                         class="link-button"
+                         severity="secondary"
+                         text
+                         rounded
+                         @click="openEventInChurchTools"
+                         v-tooltip="'Diesen Dienst in ChurchTools öffnen'"
+                     />
                 </div>
                 <div v-if="event.resources && event.resources.length > 0" class="event-resources">
                     {{ resourceNames }}

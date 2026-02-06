@@ -1,3 +1,8 @@
+---
+Date: 2026-02-06
+Author: Bernhard Weichel
+---
+
 # Benutzerhandbuch: Dienst-Umfrage Extension
 
 Diese Dokumentation richtet sich an **Administrator**, **Mitarbeiter** und **Planer**. Jeder Bereich beschreibt die relevanten Funktionen für die jeweilige Rolle.
@@ -6,10 +11,33 @@ Diese Dokumentation richtet sich an **Administrator**, **Mitarbeiter** und **Pla
 
 ## 📋 Inhaltsverzeichnis
 
-1. [Mitarbeiter: Umfrage ausfüllen](#mitarbeiter-umfrage-ausfüllen)
-2. [Planer: Auswertung & Disponierung](#planer-auswertung--disponierung)
-3. [Administrator: Installation, Konfiguration & Verwaltung](#administrator-installation-konfiguration--verwaltung)
-4. [FAQ & Fehlerbehebung](#faq--fehlerbehebung)
+1. [Erste Schritte: Bedienungshilfen](#erste-schritte-bedienungshilfen)
+2. [Mitarbeiter: Umfrage ausfüllen](#mitarbeiter-umfrage-ausfüllen)
+3. [Planer: Auswertung & Disponierung](#planer-auswertung--disponierung)
+4. [Administrator: Installation, Konfiguration & Verwaltung](#administrator-installation-konfiguration--verwaltung)
+5. [FAQ & Fehlerbehebung](#faq--fehlerbehebung)
+
+---
+
+## Erste Schritte: Bedienungshilfen
+
+### 💡 Tooltips (Tippys)
+
+Alle Buttons, Eingabefelder und Tabs haben **hilfreiche Beschreibungen**, die du sehen kannst:
+
+**Wie Tooltips funktionieren:**
+1. Hovere mit der Maus über einen Button, ein Eingabefeld oder einen Tab-Header
+2. Nach **0,5 Sekunden** (halbe Sekunde) erscheint ein **kleiner Hilfstext** unten
+3. Der Text ist zentriert und bei Bedarf mehrzeilig
+4. Wenn du die Maus wegbewegst, verschwindet der Text
+
+**Beispiele:**
+- **Buttons**: "Alle Dienste und Antworten als Excel-Datei exportieren"
+- **Eingabefelder**: "Wähle das Startdatum für die Dienste aus"
+- **Tabs**: "Hier kannst du die Dienste für dich eintragen"
+- **Admin-Funktionen**: "Verwalte alle Antworten der Benutzer"
+
+**Hinweis:** Die Tooltips sind für Anfänger gedacht – nutze sie gerne, um die Funktionen zu entdecken!
 
 ---
 
@@ -27,7 +55,9 @@ Die Extension zeigt standardmäßig die nächsten **90 Tage** an.
 
 **Zeitraum ändern:**
 - **Startdatum**: Einen anderen Startpunkt auswählen (z.B. "15. Februar 2025")
+  - 💡 **Tooltip:** Hovere über das Label "Startdatum" oder das Eingabefeld, um eine Beschreibung zu sehen
 - **Anzahl Tage**: Die Spannweite anpassen (z.B. "30 Tage" für 1 Monat)
+  - 💡 **Tooltip:** Hovere über das Label "Anzahl Tage" oder das Eingabefeld für mehr Infos
 
 > **Hinweis:** Nur Events mit Diensten, für die Sie zuständig sind, werden angezeigt.
 
@@ -171,6 +201,10 @@ Die Admin-Oberfläche hat **3 Unterbereiche:**
 - Anzahl unterschiedlicher Events
 - Zeitraum der Daten
 
+**Ansicht:**
+
+![Admin Export](screenshots/05-desktop-admin-export.png)
+
 **Excel-Export durchführen:**
 1. Klick auf **"Export als Excel"**
 2. Excel-Datei wird heruntergeladen
@@ -190,10 +224,6 @@ Die Admin-Oberfläche hat **3 Unterbereiche:**
 - Disposition außerhalb der Extension planen
 - Berichte für Leitung erstellen
 - Verfügbarkeitsanalyse durchführen
-
-**Ansicht:**
-- ![Desktop](screenshots/05-desktop-admin-export.png)
-- Desktop Export-Tab
 
 ---
 
@@ -360,21 +390,9 @@ Nach der Installation können Sie testen:
 - Überprüfen Sie die Internetverbindung
 - Kontaktieren Sie Administrator, falls Problem persisiert
 
----
-
-### Kontakt & Support
-
-**Für Fragen zu:**
-- **Verwendung der Extension**: Fragen Sie Ihren Planer/Disponenten
-- **Installation & Berechtigungen**: Kontaktieren Sie den Administrator
-- **Technische Probleme**: IT-Support oder Entwickler kontaktieren
-
----
-
-## 💡 Tipps & Tricks
-
 ### Für Mitarbeiter:
 - Füllen Sie die Umfrage zeitnah aus (je eher, desto besser kann Ihr Planer disponieren)
+- Nutzen Sie die **Tooltips**, um die Funktionen schneller zu verstehen
 - Setzen Sie einen Kommentar, wenn Sie zeitlich begrenzt verfügbar sind
 - Ändern Sie Ihre Antwort, wenn sich etwas ändert (z.B. Krankheit)
 
@@ -392,29 +410,6 @@ Nach der Installation können Sie testen:
 
 ---
 
-## 📸 Bildschirmfotos
-
-### Desktop-Ansicht
-- [Umfrage-Übersicht](screenshots/01-desktop-umfrage-overview.png)
-- [Tabellarische Service-Ansicht](screenshots/02-desktop-table-view.png)
-- [Admin: Responses](screenshots/03-desktop-admin-responses.png)
-- [Admin: Service-Konfiguration](screenshots/04-desktop-admin-config.png)
-- [Admin: Excel-Export](screenshots/05-desktop-admin-export.png)
-
-### Mobile-Ansicht
-- [Umfrage-Übersicht (Mobile)](screenshots/01-mobile-umfrage-overview.png)
-- [Tabellarische Service-Ansicht (Mobile)](screenshots/02-mobile-table-view.png)
-- [Admin: Responses (Mobile)](screenshots/03-mobile-admin-responses.png)
-- [Admin: Service-Konfiguration (Mobile)](screenshots/04-mobile-admin-config.png)
-
-### Tablet-Ansicht
-- [Umfrage-Übersicht (Tablet)](screenshots/06-tablet-umfrage-overview.png)
-- [Tabellarische Service-Ansicht (Tablet)](screenshots/07-tablet-table-view.png)
-- [Admin: Responses (Tablet)](screenshots/08-tablet-admin-responses.png)
-- [Admin: Service-Konfiguration (Tablet)](screenshots/09-tablet-admin-config.png)
-
----
-
 ## 📞 Weitere Ressourcen
 
 - **ChurchTools Dokumentation**: https://www.church.tools/help
@@ -423,4 +418,6 @@ Nach der Installation können Sie testen:
 
 ---
 
-**Version 0.3.2** | Letzte Aktualisierung: Jan 2025
+**Version 0.4.0** | Letzte Aktualisierung: Feb 2025
+- ✨ Neue Feature: Tooltips für alle Buttons, Eingabefelder und Tabs
+- 🎨 Verbesserte UX mit floating-vue

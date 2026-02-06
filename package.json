@@ -25,6 +25,7 @@
     "dependencies": {
         "@primeuix/themes": "^2.0.3",
         "@vitejs/plugin-vue": "^6.0.3",
+        "floating-vue": "^5.2.2",
         "primeicons": "^7.0.0",
         "primevue": "^4.5.4",
         "vue": "^3.5.27",

@@ -68,8 +68,9 @@ const assignmentDisplay = computed(() => {
         return { text: '', severity: 'secondary' as const };
     }
     const assignment = props.service.assignments[0];
+    const statusText = assignment.isConfirmed ? ' (Zugesagt)' : ' (Angefordert)';
     return {
-        text: assignment.personName,
+        text: assignment.personName + statusText,
         severity: assignment.isConfirmed
             ? ('success' as const)
             : ('warn' as const),
@@ -161,51 +162,56 @@ const allComments = computed(() => {
         <td class="response-buttons">
             <div class="button-group">
                 <Button
-                    icon="pi pi-check"
-                    label="Ja"
-                    :severity="selectedResponse === 'yes' ? undefined : 'secondary'"
-                    :outlined="selectedResponse !== 'yes'"
-                    class="btn-yes"
-                    :class="{ active: selectedResponse === 'yes' }"
-                    @click="handleResponse('yes')"
-                    :loading="saving && selectedResponse === 'yes'"
-                />
-                <Button
-                    icon="pi pi-question"
-                    label="Vllt"
-                    :severity="selectedResponse === 'maybe' ? 'warn' : 'secondary'"
-                    :outlined="selectedResponse !== 'maybe'"
-                    class="btn-maybe"
-                    :class="{ active: selectedResponse === 'maybe' }"
-                    @click="handleResponse('maybe')"
-                    :loading="saving && selectedResponse === 'maybe'"
-                />
-                <Button
-                    icon="pi pi-times"
-                    label="Nein"
-                    :severity="selectedResponse === 'no' ? 'danger' : 'secondary'"
-                    :outlined="selectedResponse !== 'no'"
-                    class="btn-no"
-                    :class="{ active: selectedResponse === 'no' }"
-                    @click="handleResponse('no')"
-                    :loading="saving && selectedResponse === 'no'"
-                />
-                <Button
-                    icon="pi pi-pencil"
-                    text
-                    severity="info"
-                    class="btn-comment"
-                    @click="showCommentForm = true"
-                />
-                <Button
-                    icon="pi pi-trash"
-                    severity="danger"
-                    text
-                    class="btn-delete"
-                    @click="withdrawResponse"
-                    :loading="saving"
-                    :disabled="!selectedResponse && !comment"
-                />
+                     icon="pi pi-check"
+                     label="Ja"
+                     :severity="selectedResponse === 'yes' ? undefined : 'secondary'"
+                     :outlined="selectedResponse !== 'yes'"
+                     class="btn-yes"
+                     :class="{ active: selectedResponse === 'yes' }"
+                     @click="handleResponse('yes')"
+                     :loading="saving && selectedResponse === 'yes'"
+                     v-tooltip="'Ich bin verfügbar'"
+                 />
+                 <Button
+                     icon="pi pi-question"
+                     label="Vllt"
+                     :severity="selectedResponse === 'maybe' ? 'warn' : 'secondary'"
+                     :outlined="selectedResponse !== 'maybe'"
+                     class="btn-maybe"
+                     :class="{ active: selectedResponse === 'maybe' }"
+                     @click="handleResponse('maybe')"
+                     :loading="saving && selectedResponse === 'maybe'"
+                     v-tooltip="'Ich bin eventuell verfügbar'"
+                 />
+                 <Button
+                     icon="pi pi-times"
+                     label="Nein"
+                     :severity="selectedResponse === 'no' ? 'danger' : 'secondary'"
+                     :outlined="selectedResponse !== 'no'"
+                     class="btn-no"
+                     :class="{ active: selectedResponse === 'no' }"
+                     @click="handleResponse('no')"
+                     :loading="saving && selectedResponse === 'no'"
+                     v-tooltip="'Ich bin nicht verfügbar'"
+                 />
+                 <Button
+                     icon="pi pi-pencil"
+                     text
+                     severity="info"
+                     class="btn-comment"
+                     @click="showCommentForm = true"
+                     v-tooltip="'Kommentar hinzufügen oder bearbeiten'"
+                 />
+                 <Button
+                     icon="pi pi-trash"
+                     severity="danger"
+                     text
+                     class="btn-delete"
+                     @click="withdrawResponse"
+                     :loading="saving"
+                     :disabled="!selectedResponse && !comment"
+                     v-tooltip="'Antwort und Kommentar löschen'"
+                 />
             </div>
             <Textarea
                 v-if="comment || showCommentForm"
@@ -273,53 +279,58 @@ const allComments = computed(() => {
         </div>
 
         <div class="button-group mobile">
-            <Button
-                icon="pi pi-check"
-                label="Ja"
-                :severity="selectedResponse === 'yes' ? undefined : 'secondary'"
-                :outlined="selectedResponse !== 'yes'"
-                class="btn-yes"
-                :class="{ active: selectedResponse === 'yes' }"
-                @click="handleResponse('yes')"
-                :loading="saving && selectedResponse === 'yes'"
-            />
-            <Button
-                icon="pi pi-question"
-                label="Vllt"
-                :severity="selectedResponse === 'maybe' ? 'warn' : 'secondary'"
-                :outlined="selectedResponse !== 'maybe'"
-                class="btn-maybe"
-                :class="{ active: selectedResponse === 'maybe' }"
-                @click="handleResponse('maybe')"
-                :loading="saving && selectedResponse === 'maybe'"
-            />
-            <Button
-                icon="pi pi-times"
-                label="Nein"
-                :severity="selectedResponse === 'no' ? 'danger' : 'secondary'"
-                :outlined="selectedResponse !== 'no'"
-                class="btn-no"
-                :class="{ active: selectedResponse === 'no' }"
-                @click="handleResponse('no')"
-                :loading="saving && selectedResponse === 'no'"
-            />
-            <Button
-                icon="pi pi-pencil"
-                text
-                severity="info"
-                class="btn-comment"
-                @click="showCommentForm = true"
-            />
-            <Button
-                icon="pi pi-trash"
-                severity="danger"
-                text
-                class="btn-delete"
-                @click="withdrawResponse"
-                :loading="saving"
-                :disabled="!selectedResponse && !comment"
-            />
-        </div>
+             <Button
+                 icon="pi pi-check"
+                 label="Ja"
+                 :severity="selectedResponse === 'yes' ? undefined : 'secondary'"
+                 :outlined="selectedResponse !== 'yes'"
+                 class="btn-yes"
+                 :class="{ active: selectedResponse === 'yes' }"
+                 @click="handleResponse('yes')"
+                 :loading="saving && selectedResponse === 'yes'"
+                 v-tooltip="'Ich bin verfügbar'"
+             />
+             <Button
+                 icon="pi pi-question"
+                 label="Vllt"
+                 :severity="selectedResponse === 'maybe' ? 'warn' : 'secondary'"
+                 :outlined="selectedResponse !== 'maybe'"
+                 class="btn-maybe"
+                 :class="{ active: selectedResponse === 'maybe' }"
+                 @click="handleResponse('maybe')"
+                 :loading="saving && selectedResponse === 'maybe'"
+                 v-tooltip="'Ich bin eventuell verfügbar'"
+             />
+             <Button
+                 icon="pi pi-times"
+                 label="Nein"
+                 :severity="selectedResponse === 'no' ? 'danger' : 'secondary'"
+                 :outlined="selectedResponse !== 'no'"
+                 class="btn-no"
+                 :class="{ active: selectedResponse === 'no' }"
+                 @click="handleResponse('no')"
+                 :loading="saving && selectedResponse === 'no'"
+                 v-tooltip="'Ich bin nicht verfügbar'"
+             />
+             <Button
+                 icon="pi pi-pencil"
+                 text
+                 severity="info"
+                 class="btn-comment"
+                 @click="showCommentForm = true"
+                 v-tooltip="'Kommentar hinzufügen oder bearbeiten'"
+             />
+             <Button
+                 icon="pi pi-trash"
+                 severity="danger"
+                 text
+                 class="btn-delete"
+                 @click="withdrawResponse"
+                 :loading="saving"
+                 :disabled="!selectedResponse && !comment"
+                 v-tooltip="'Antwort und Kommentar löschen'"
+             />
+         </div>
 
         <Textarea
             v-if="comment || showCommentForm"

@@ -4,6 +4,7 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import ToggleSwitch from 'primevue/toggleswitch';
 import ProgressSpinner from 'primevue/progressspinner';
+import Button from 'primevue/button';
 import { useToast } from 'primevue/usetoast';
 import type { AdminServiceConfig, EventWithServices } from '../types';
 import { getServiceConfigs, updateServiceConfig, getAllServicesFromResponses } from '../pollService';
@@ -169,11 +170,12 @@ onMounted(loadConfigs);
             <i class="pi pi-exclamation-triangle"></i>
             <p>{{ error }}</p>
             <Button
-                label="Erneut versuchen"
-                icon="pi pi-refresh"
-                severity="warning"
-                @click="loadConfigs"
-            />
+                 label="Erneut versuchen"
+                 icon="pi pi-refresh"
+                 severity="warning"
+                 @click="loadConfigs"
+                 v-tooltip="'Konfiguration neu laden'"
+             />
         </div>
 
         <div v-else-if="configs.length === 0" class="empty-state">

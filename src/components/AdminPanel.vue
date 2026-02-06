@@ -58,8 +58,10 @@ function handleExportAll() {
         <TabView v-model:activeIndex="activeTab">
             <TabPanel>
                 <template #header>
-                    <i class="pi pi-list mr-2"></i>
-                    <span>Responses</span>
+                    <div v-tooltip="'Verwalte alle Antworten der Benutzer'">
+                        <i class="pi pi-list mr-2"></i>
+                        <span>Responses</span>
+                    </div>
                 </template>
                 <AdminResponses
                     :responses="responses"
@@ -71,16 +73,20 @@ function handleExportAll() {
 
             <TabPanel>
                 <template #header>
-                    <i class="pi pi-sliders-h mr-2"></i>
-                    <span>Service Config</span>
+                    <div v-tooltip="'Konfiguriere Services und ihre Sichtbarkeit'">
+                        <i class="pi pi-sliders-h mr-2"></i>
+                        <span>Service Config</span>
+                    </div>
                 </template>
                 <AdminConfig :events="events" @config-changed="() => emit('config-changed')" />
             </TabPanel>
 
             <TabPanel>
                 <template #header>
-                    <i class="pi pi-file-excel mr-2"></i>
-                    <span>Export</span>
+                    <div v-tooltip="'Exportiere alle Daten als Excel-Datei'">
+                        <i class="pi pi-file-excel mr-2"></i>
+                        <span>Export</span>
+                    </div>
                 </template>
                 <div class="export-panel">
                     <div class="export-info">
@@ -98,13 +104,14 @@ function handleExportAll() {
                         </div>
                     </div>
                     <Button
-                        label="Excel Export (Alle Responses)"
-                        icon="pi pi-file-excel"
-                        severity="success"
-                        size="large"
-                        @click="handleExportAll"
-                        :disabled="responses.length === 0"
-                    />
+                         label="Excel Export (Alle Responses)"
+                         icon="pi pi-file-excel"
+                         severity="success"
+                         size="large"
+                         @click="handleExportAll"
+                         :disabled="responses.length === 0"
+                         v-tooltip="'Alle Antworten aller Benutzer als Excel-Datei exportieren'"
+                     />
                 </div>
             </TabPanel>
         </TabView>

@@ -1,7 +1,8 @@
 import { createApp } from 'vue';
 import PrimeVue from 'primevue/config';
 import ToastService from 'primevue/toastservice';
-import Tooltip from 'primevue/tooltip';
+import FloatingVue from 'floating-vue';
+import 'floating-vue/dist/style.css';
 import Aura from '@primeuix/themes/aura';
 // Note: primeicons loaded from CDN in index.html
 
@@ -72,7 +73,17 @@ app.use(PrimeVue, {
     },
 });
 app.use(ToastService);
-app.directive('tooltip', Tooltip);
+app.use(FloatingVue, {
+    themes: {
+        tooltip: {
+            delay: {
+                show: 500,
+                hide: 200,
+            },
+            placement: 'top',
+        },
+    },
+});
 
 // Register only used components
 app.component('Button', Button);
