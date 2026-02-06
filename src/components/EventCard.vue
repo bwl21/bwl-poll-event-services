@@ -23,6 +23,7 @@ const props = defineProps<{
     allResponses: ServicePollEntry[];
     userResponses: ServicePollEntry[];
     currentUser: UserInfo;
+    hideAssigned: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -64,7 +65,7 @@ const resourceNames = computed(() => {
 });
 
 const sortedServices = computed(() => {
-    return [...props.event.services].sort((a, b) => {
+    let services = [...props.event.services].sort((a, b) => {
         const sortA = a.sortKey ?? Number.MAX_SAFE_INTEGER;
         const sortB = b.sortKey ?? Number.MAX_SAFE_INTEGER;
         
@@ -76,6 +77,15 @@ const sortedServices = computed(() => {
         // Secondary sort: alphabetically by name
         return a.name.localeCompare(b.name, 'de');
     });
+    
+    // Filter out assigned services if toggle is OFF (default behavior)
+    if (!props.hideAssigned) {
+        services = services.filter(
+            (service) => !service.assignments || service.assignments.length === 0
+        );
+    }
+    
+    return services;
 });
 
 function getUserResponseForService(serviceId: number): ServicePollEntry | undefined {
@@ -115,9 +125,9 @@ function getOtherResponsesForService(serviceId: number): ServicePollEntry[] {
                 <div v-if="event.resources && event.resources.length > 0" class="event-resources">
                     {{ resourceNames }}
                 </div>
-            </div>
-        </template>
-        <template #content>
+                </div>
+                </template>
+                <template #content>
             <!-- Desktop: Table layout -->
             <div class="desktop-view">
                 <table class="services-table">

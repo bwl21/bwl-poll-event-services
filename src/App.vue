@@ -8,6 +8,7 @@ import Message from 'primevue/message';
 import Toast from 'primevue/toast';
 import TabView from 'primevue/tabview';
 import TabPanel from 'primevue/tabpanel';
+import ToggleSwitch from 'primevue/toggleswitch';
 
 import EventCard from './components/EventCard.vue';
 // Lazy load AdminPanel (only for admins)
@@ -45,6 +46,8 @@ const activeTab = ref(0);
 const config = getPollConfig();
 const startDate = ref(new Date(config.startDate));
 const days = ref(config.days);
+const urlParams = new URLSearchParams(window.location.search);
+const hideAssigned = ref(urlParams.get('hideAssigned') === 'true');
 
 const userResponses = computed(() => {
     if (!currentUser.value) return [];
@@ -109,7 +112,7 @@ function copyURLToClipboard() {
     // Get current settings
     const startStr = getLocalDateString(startDate.value);
     const baseURL = window.location.origin + window.location.pathname;
-    const urlWithParams = `${baseURL}?start=${startStr}&days=${days.value}`;
+    const urlWithParams = `${baseURL}?start=${startStr}&days=${days.value}&hideAssigned=${hideAssigned.value}`;
     
     // Copy to clipboard
     navigator.clipboard.writeText(urlWithParams).then(() => {
@@ -218,14 +221,12 @@ onMounted(loadData);
                              v-tooltip="'Gib die Anzahl der Tage ein (1-365)'"
                          />
                      </div>
-                    <div class="control-group export-btn">
-                         <Button
-                             label="Excel Export"
-                             icon="pi pi-file-excel"
-                             severity="success"
-                             @click="handleExport"
-                             :disabled="events.length === 0"
-                             v-tooltip="'Alle Dienste und Antworten als Excel-Datei exportieren'"
+                     <div class="control-group toggle-group">
+                         <label for="hideAssignedToggle">Auch besetzte anzeigen</label>
+                         <ToggleSwitch 
+                             id="hideAssignedToggle"
+                             v-model="hideAssigned"
+                             v-tooltip="'Auch Dienste anzeigen, die bereits besetzt sind'"
                          />
                      </div>
                      <div class="control-group">
@@ -238,7 +239,7 @@ onMounted(loadData);
                              v-tooltip="'Aktuelle URL mit Einstellungen in Zwischenablage kopieren'"
                          />
                      </div>
-                </div>
+                     </div>
 
                 <div v-if="loading" class="loading-container">
                     <ProgressSpinner />
@@ -258,16 +259,17 @@ onMounted(loadData);
                 </div>
 
                 <div v-else class="events-list">
-                    <EventCard
-                        v-for="event in events"
-                        :key="event.id"
-                        :event="event"
-                        :all-responses="allResponses"
-                        :user-responses="userResponses"
-                        :current-user="currentUser!"
-                        @response-saved="handleResponseSaved"
-                    />
-                </div>
+                     <EventCard
+                         v-for="event in events"
+                         :key="event.id"
+                         :event="event"
+                         :all-responses="allResponses"
+                         :user-responses="userResponses"
+                         :current-user="currentUser!"
+                         :hide-assigned="hideAssigned"
+                         @response-saved="handleResponseSaved"
+                     />
+                 </div>
             </TabPanel>
 
             <TabPanel v-if="userIsAdmin">
@@ -396,8 +398,17 @@ onMounted(loadData);
     color: #666;
 }
 
-.export-btn {
-    margin-left: auto;
+.toggle-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.toggle-group label {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0;
+    white-space: nowrap;
 }
 
 .loading-container {

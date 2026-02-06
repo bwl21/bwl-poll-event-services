@@ -59,6 +59,13 @@ Die Extension zeigt standardmäßig die nächsten **90 Tage** an.
 - **Anzahl Tage**: Die Spannweite anpassen (z.B. "30 Tage" für 1 Monat)
   - 💡 **Tooltip:** Hovere über das Label "Anzahl Tage" oder das Eingabefeld für mehr Infos
 
+**Filter: Unbesetzte Dienste anzeigen**
+- **Toggle:** "Auch besetzte anzeigen" (standardmäßig OFF)
+  - 💡 **OFF (default)** = Zeigt nur Dienste, die noch nicht besetzt sind (ideal zum schnellen Ausfüllen)
+  - 💡 **ON** = Zeigt alle Dienste, auch die bereits besetzten
+  - 💡 **Tooltip:** Hovere über das Toggle, um mehr zu erfahren
+- Diese Einstellung wird in der URL gespeichert (Parameter: `hideAssigned=true/false`)
+
 > **Hinweis:** Nur Events mit Diensten, für die Sie zuständig sind, werden angezeigt.
 
 **Ansicht:**
@@ -67,11 +74,13 @@ Die Extension zeigt standardmäßig die nächsten **90 Tage** an.
 #### 3. Events und Dienste sehen
 Die Umfrage zeigt:
 - **Event-Datum und -Name** (z.B. "So, 2. Feb 2025 - Gottesdienst")
-- **Alle Dienste**, die für dieses Event benötigt werden
+- **Dienste** (abhängig vom Filter-Toggle)
+  - **OFF (default):** Nur unbesetzte Dienste
+  - **ON:** Alle Dienste (besetzt und unbesetzt)
 - **Für jeden Dienst:**
   - Ihre persönliche Antwortmöglichkeit (Ja/Vielleicht/Nein)
   - Kommentarfeld (optional)
-  - Bereits gebuchte Personen (aus ChurchTools)
+  - **Besetzung:** Bereits gebuchte Personen aus ChurchTools (mit Status: Zugesagt/Angefordert)
   - Antworten anderer Mitarbeiter
 
 #### 4. Verfügbarkeit angeben
@@ -361,6 +370,24 @@ Nach der Installation können Sie testen:
 - Dateiname: `responses_[Datum]_[Datum].xlsx`
 - Sie können sie mit Excel oder Google Sheets öffnen
 
+#### **F: Was bedeutet die "Besetzung" Spalte?**
+**A:**
+- Die Besetzungs-Spalte zeigt, wer bereits fest für einen Dienst gebucht ist (aus ChurchTools)
+- **Grüner Status (Zugesagt)**: Die Person hat bereits zugesagt und ist verbindlich gebucht
+- **Orange Status (Angefordert)**: Die Anfrage ist noch ausstehend, wartet auf Antwort
+- Wenn Sie den Toggle "Auch besetzte anzeigen" **OFF** haben (default), werden bereits besetzte Dienste verborgen
+- Wenn Sie den Toggle **ON** schalten, sehen Sie alle Dienste - auch die schon besetzten
+
+#### **F: Wie teile ich die Umfrage mit einem bestimmten Zeitraum mit jemandem?**
+**A:**
+- Nutzen Sie den **"URL kopieren"** Button (Kopier-Symbol)
+- Der Button kopiert die URL mit all Ihren aktuellen Einstellungen in die Zwischenablage:
+  - Startdatum
+  - Anzahl der Tage
+  - Toggle-Status ("Auch besetzte anzeigen")
+- Teilen Sie die kopierte URL mit Ihrem Kollegen
+- Dieser öffnet die URL und sieht genau den gleichen Zeitraum und Filter
+
 ---
 
 ### Technische Probleme
@@ -418,6 +445,8 @@ Nach der Installation können Sie testen:
 
 ---
 
-**Version 0.4.0** | Letzte Aktualisierung: Feb 2025
-- ✨ Neue Feature: Tooltips für alle Buttons, Eingabefelder und Tabs
-- 🎨 Verbesserte UX mit floating-vue
+**Version 0.4.2** | Letzte Aktualisierung: Feb 2026
+- ✨ Neue Feature: Filter-Toggle "Auch besetzte anzeigen" zum Fokus auf unbesetzte Dienste
+- 🔗 URL-Parameter für Zeitraum und Filter-Einstellungen (teilbar mit Kollegen)
+- 🎨 Text-Wrapping in der "Besetzung"-Spalte für lange Namen
+- ✨ Verbesserte UX mit floating-vue
