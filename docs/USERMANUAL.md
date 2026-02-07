@@ -64,7 +64,7 @@ Die Extension zeigt standardmäßig die nächsten **90 Tage** an.
   - 💡 **OFF (default)** = Zeigt nur Dienste, die noch nicht besetzt sind (ideal zum schnellen Ausfüllen)
   - 💡 **ON** = Zeigt alle Dienste, auch die bereits besetzten
   - 💡 **Tooltip:** Hovere über das Toggle, um mehr zu erfahren
-- Diese Einstellung wird in der URL gespeichert (Parameter: `hideAssigned=true/false`)
+- Diese Einstellung wird in der URL gespeichert (Parameter: `showAssigned=true/false`)
 
 > **Hinweis:** Nur Events mit Diensten, für die Sie zuständig sind, werden angezeigt.
 
@@ -461,7 +461,17 @@ Nach der Installation können Sie testen:
 
 ---
 
-**Version 0.4.2** | Letzte Aktualisierung: Feb 2026
+**Version 0.5.0** | Letzte Aktualisierung: Feb 2026
+- 🐛 Kritischer Bugfix: Dienst-ID Zuordnung korrigiert (Antworten werden nun korrekt dem richtigen Dienst zugeordnet)
+- 🔒 Sicherheit: Excel-Export schützt nun vor Formel-Injection in Kommentaren und Benutzernamen
+- 🔒 Sicherheit: Admin-Funktionen prüfen nun Berechtigungen serverseitig
+- ⚡ Performance: Parallele Datenanfragen werden bei schnellen Eingaben nicht mehr überschrieben
+- ✨ Verbesserte Rückmeldungen: Toast-Benachrichtigungen bei URL-Kopieren, Admin-Speichern und -Löschen
+- 🏗️ Toggle umbenannt: "hideAssigned" → "showAssigned" (URL-Parameter: `showAssigned=true`)
+- 🏗️ Zentralisiertes Debug-Logging über `?debug` URL-Parameter
+- 🏗️ Datum-Formatierung konsolidiert in gemeinsames Modul
+
+**Version 0.4.2** | Feb 2026
 - ✨ Neue Feature: Filter-Toggle "Auch besetzte anzeigen" zum Fokus auf unbesetzte Dienste
 - 🔗 URL-Parameter für Zeitraum und Filter-Einstellungen (teilbar mit Kollegen)
 - 🎨 Text-Wrapping in der "Besetzung"-Spalte für lange Namen
