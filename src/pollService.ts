@@ -21,18 +21,14 @@ import {
     updateCustomDataValue,
     deleteCustomDataValue,
 } from './utils/kv-store';
+import { createLogger } from './utils/logger';
+import { formatWeekday, formatDateOnly, formatTime } from './utils/date';
 
 const POLL_CATEGORY_SHORTY = 'poll-responses';
 const ADMIN_CONFIG_CATEGORY_SHORTY = 'admin-config';
+const DEFAULT_DAYS = 90;
 
-// Debug logging controlled by ?debug URL parameter
-const DEBUG = new URLSearchParams(window.location.search).has('debug');
-
-function debugLog(...args: any[]): void {
-    if (DEBUG) {
-        console.log('[POLL DEBUG]', ...args);
-    }
-}
+const debugLog = createLogger('POLL');
 
 let cachedUser: UserInfo | null = null;
 
@@ -62,7 +58,7 @@ export function getPollConfig(): PollConfig {
 
     return {
         startDate: startParam || today,
-        days: daysParam ? parseInt(daysParam, 10) : 90,
+        days: daysParam ? parseInt(daysParam, 10) : DEFAULT_DAYS,
     };
 }
 
@@ -664,54 +660,7 @@ export function formatResponse(response: string | null): string {
     }
 }
 
-/**
- * Format weekday from date string
- */
-export function formatWeekday(dateStr: string): string {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('de-DE', {
-        weekday: 'long',
-    });
-}
-
-/**
- * Format date only (no time)
- */
-export function formatDateOnly(dateStr: string): string {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('de-DE', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-    });
-}
-
-/**
- * Format time only (no date)
- */
-export function formatTime(dateStr: string): string {
-    const date = new Date(dateStr);
-    return date.toLocaleTimeString('de-DE', {
-        hour: '2-digit',
-        minute: '2-digit',
-    });
-}
-
-/**
- * Format timestamp
- */
-export function formatTimestamp(timestamp: string): string {
-    if (!timestamp) return '-';
-    const date = new Date(timestamp);
-    if (isNaN(date.getTime())) return '-';
-    return date.toLocaleString('de-DE', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
-}
+export { formatWeekday, formatDateOnly, formatTime, formatTimestamp } from './utils/date';
 
 /**
  * Prepare response rows for display (shared logic for Excel export and Admin table)
@@ -723,7 +672,7 @@ export function prepareResponseRows(
 ): import('./types').PreparedResponseRow[] {
     const rows: import('./types').PreparedResponseRow[] = [];
     
-    console.log('[prepareResponseRows] Called with:', {
+    debugLog('Called with:', {
         eventsCount: events.length,
         responsesCount: responses.length,
         includeEmpty,
@@ -742,11 +691,11 @@ export function prepareResponseRows(
 
     // Build display rows
     for (const event of events) {
-        console.log('[prepareResponseRows] Processing event:', event.id, event.name, 'services:', event.services.length);
+        debugLog('Processing event:', event.id, event.name, 'services:', event.services.length);
         for (const service of event.services) {
-            const serviceResponses = responseMap.get(`${event.id}-${service.id}`) || [];
+            const serviceResponses = responseMap.get(`${event.id}-${service.serviceId}`) || [];
             
-            console.log('[prepareResponseRows] Event', event.id, 'Service', service.id, service.name, '- responses:', serviceResponses.length);
+            debugLog('Event', event.id, 'Service', service.serviceId, service.name, '- responses:', serviceResponses.length);
             
             // Format assignment info
             let assignmentText = '';
@@ -774,7 +723,7 @@ export function prepareResponseRows(
                         editedBy: undefined,
                         editedAt: undefined,
                         eventId: event.id,
-                        serviceId: service.id,
+                        serviceId: service.serviceId,
                         userId: 0,
                     });
                 }
@@ -802,9 +751,9 @@ export function prepareResponseRows(
         }
     }
     
-    console.log('[prepareResponseRows] Prepared', rows.length, 'rows');
+    debugLog('Prepared', rows.length, 'rows');
     if (rows.length < 10) {
-        console.log('[prepareResponseRows] Sample rows:', rows);
+        debugLog('Sample rows:', rows);
     }
 
     return rows;
@@ -818,47 +767,47 @@ export async function getServiceCandidates(
 ): Promise<Map<number, string>> {
     const people = new Map<number, string>();
     
-    console.log('[getServiceCandidates] Called with groupIds:', groupIds);
+    debugLog('Called with groupIds:', groupIds);
     
     if (!groupIds || groupIds.length === 0) {
-        console.warn('[getServiceCandidates] No group IDs provided');
+        debugLog('No group IDs provided');
         return people;
     }
     
     try {
         // Fetch all group members for the service groups
         for (const groupId of groupIds) {
-            console.log('[getServiceCandidates] Fetching members for group', groupId);
+            debugLog('Fetching members for group', groupId);
             const groupMembers = await churchtoolsClient.get<any[]>(
                 `/groups/${groupId}/members`
             );
-            console.log('[getServiceCandidates] Response for group', groupId, ':', groupMembers);
+            debugLog('Response for group', groupId, ':', groupMembers);
             
             if (groupMembers && Array.isArray(groupMembers)) {
-                console.log('[getServiceCandidates] Found', groupMembers.length, 'members in group', groupId);
+                debugLog('Found', groupMembers.length, 'members in group', groupId);
                 for (const member of groupMembers) {
-                    console.log('[getServiceCandidates] Processing member:', member);
+                    debugLog('Processing member:', member);
                     const personId = member.personId;
                     const personName = member.person?.domainAttributes?.firstName && member.person?.domainAttributes?.lastName
                         ? `${member.person.domainAttributes.firstName} ${member.person.domainAttributes.lastName}`
                         : member.name || member.title || '';
                     
-                    console.log('[getServiceCandidates] PersonId:', personId, 'PersonName:', personName);
+                    debugLog('PersonId:', personId, 'PersonName:', personName);
                     
                     if (personId && personName && !people.has(personId)) {
                         people.set(personId, personName);
-                        console.log('[getServiceCandidates] Added person', personId, personName);
+                        debugLog('Added person', personId, personName);
                     }
                 }
             } else {
-                console.warn('[getServiceCandidates] No members found or invalid response for group', groupId);
+                debugLog('No members found or invalid response for group', groupId);
             }
         }
     } catch (error) {
         console.error('[getServiceCandidates] Error fetching group members:', error);
     }
     
-    console.log('[getServiceCandidates] Returning', people.size, 'people');
+    debugLog('Returning', people.size, 'people');
     return people;
 }
 

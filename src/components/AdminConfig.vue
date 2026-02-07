@@ -6,17 +6,11 @@ import ToggleSwitch from 'primevue/toggleswitch';
 import ProgressSpinner from 'primevue/progressspinner';
 import Button from 'primevue/button';
 import { useToast } from 'primevue/usetoast';
+import { createLogger } from '../utils/logger';
 import type { AdminServiceConfig, EventWithServices } from '../types';
 import { getServiceConfigs, updateServiceConfig, getAllServicesFromResponses } from '../pollService';
 
-// Debug logging controlled by ?debug URL parameter
-const DEBUG = new URLSearchParams(window.location.search).has('debug');
-
-function debugLog(...args: any[]): void {
-    if (DEBUG) {
-        console.log('[ADMIN-CONFIG DEBUG]', ...args);
-    }
-}
+const debugLog = createLogger('ADMIN-CONFIG');
 
 const props = defineProps<{
     events: EventWithServices[];

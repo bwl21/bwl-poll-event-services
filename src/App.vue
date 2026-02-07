@@ -1,15 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, defineAsyncComponent } from 'vue';
-import DatePicker from 'primevue/datepicker';
-import InputNumber from 'primevue/inputnumber';
-import Button from 'primevue/button';
-import ProgressSpinner from 'primevue/progressspinner';
-import Message from 'primevue/message';
-import Toast from 'primevue/toast';
-import TabView from 'primevue/tabview';
-import TabPanel from 'primevue/tabpanel';
-import ToggleSwitch from 'primevue/toggleswitch';
-
+import { useToast } from 'primevue/usetoast';
 import EventCard from './components/EventCard.vue';
 // Lazy load AdminPanel (only for admins)
 const AdminPanel = defineAsyncComponent(() => import('./components/AdminPanel.vue'));
@@ -21,18 +12,15 @@ import {
     isUserAdmin,
 } from './pollService';
 import { exportToExcel } from './exportService';
+import { createLogger } from './utils/logger';
+import { getLocalDateString } from './utils/date';
 import type { EventWithServices, ServicePollEntry, UserInfo } from './types';
 
-// Debug logging controlled by ?debug URL parameter
+const debugLog = createLogger('APP');
 const DEBUG = new URLSearchParams(window.location.search).has('debug');
 
-function debugLog(...args: any[]): void {
-    if (DEBUG) {
-        console.log('[APP DEBUG]', ...args);
-    }
-}
-
 const APP_VERSION = __APP_VERSION__;
+const toast = useToast();
 
 const loading = ref(true);
 const error = ref<string | null>(null);
@@ -41,13 +29,14 @@ const allResponses = ref<ServicePollEntry[]>([]);
 const currentUser = ref<UserInfo | null>(null);
 const userIsAdmin = ref(false);
 const activeTab = ref(0);
+let loadSeq = 0;
 
 // Config from URL params or defaults
 const config = getPollConfig();
 const startDate = ref(new Date(config.startDate));
 const days = ref(config.days);
 const urlParams = new URLSearchParams(window.location.search);
-const hideAssigned = ref(urlParams.get('hideAssigned') === 'true');
+const showAssigned = ref(urlParams.get('showAssigned') === 'true');
 
 const userResponses = computed(() => {
     if (!currentUser.value) return [];
@@ -56,26 +45,19 @@ const userResponses = computed(() => {
 
 const visibleEvents = computed(() => {
     return events.value.filter((event) => {
-        // If hideAssigned is false, only show events with unassigned services
-        if (!hideAssigned.value) {
+        // When showAssigned is false (default): only show events with unassigned services
+        if (!showAssigned.value) {
             return event.services.some(
                 (service) => !service.assignments || service.assignments.length === 0
             );
         }
-        // If hideAssigned is true, show all events
+        // When showAssigned is true: show all events
         return true;
     });
 });
 
-// Helper: Convert local date to YYYY-MM-DD format (avoid timezone offset issues)
-function getLocalDateString(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
-
 async function loadData() {
+    const seq = ++loadSeq;
     loading.value = true;
     error.value = null;
 
@@ -89,16 +71,21 @@ async function loadData() {
             isUserAdmin(),
         ]);
 
+        if (seq !== loadSeq) return;
+
         events.value = eventsData;
         allResponses.value = responsesData;
         userIsAdmin.value = adminStatus;
         debugLog('User is admin:', adminStatus);
     } catch (e) {
+        if (seq !== loadSeq) return;
         debugLog('Error loading data:', e);
         error.value =
             'Die Dienste konnten nicht geladen werden. Bitte versuchen Sie es später erneut.';
     } finally {
-        loading.value = false;
+        if (seq === loadSeq) {
+            loading.value = false;
+        }
     }
 }
 
@@ -125,16 +112,24 @@ function copyURLToClipboard() {
     // Get current settings
     const startStr = getLocalDateString(startDate.value);
     const baseURL = window.location.origin + window.location.pathname;
-    const urlWithParams = `${baseURL}?start=${startStr}&days=${days.value}&hideAssigned=${hideAssigned.value}`;
+    const urlWithParams = `${baseURL}?start=${startStr}&days=${days.value}&showAssigned=${showAssigned.value}`;
     
     // Copy to clipboard
     navigator.clipboard.writeText(urlWithParams).then(() => {
-        // Show success message
-        const toast = document.querySelector('[role="log"]');
         debugLog('URL copied to clipboard:', urlWithParams);
-        // Optional: Show a brief notification (you could use a toast here if desired)
-    }).catch(err => {
-        console.error('Failed to copy URL:', err);
+        toast.add({
+            severity: 'success',
+            summary: 'URL kopiert',
+            detail: 'Link wurde in die Zwischenablage kopiert',
+            life: 3000,
+        });
+    }).catch(() => {
+        toast.add({
+            severity: 'error',
+            summary: 'Kopieren fehlgeschlagen',
+            detail: 'URL konnte nicht kopiert werden',
+            life: 5000,
+        });
     });
 }
 
@@ -152,8 +147,7 @@ function handleResponseDeleted(entry: ServicePollEntry) {
 }
 
 function handleResponseSavedAdmin(entry: ServicePollEntry) {
-    // Handle response saved from admin dialog
-    console.log('[App.vue] handleResponseSavedAdmin called with:', entry);
+    debugLog('handleResponseSavedAdmin called with:', entry);
     const idx = allResponses.value.findIndex(
         (r) =>
             r.eventId === entry.eventId &&
@@ -161,13 +155,13 @@ function handleResponseSavedAdmin(entry: ServicePollEntry) {
             r.userId === entry.userId
     );
     if (idx >= 0) {
-        console.log('[App.vue] Updating existing response at index', idx);
+        debugLog('Updating existing response at index', idx);
         allResponses.value[idx] = entry;
     } else {
-        console.log('[App.vue] Adding new response');
+        debugLog('Adding new response');
         allResponses.value.push(entry);
     }
-    console.log('[App.vue] allResponses now:', allResponses.value);
+    debugLog('allResponses now:', allResponses.value);
 }
 
 onMounted(loadData);
@@ -235,10 +229,10 @@ onMounted(loadData);
                          />
                      </div>
                      <div class="control-group toggle-group">
-                         <label for="hideAssignedToggle">Auch besetzte anzeigen</label>
+                         <label for="showAssignedToggle">Auch besetzte anzeigen</label>
                          <ToggleSwitch 
-                             id="hideAssignedToggle"
-                             v-model="hideAssigned"
+                             id="showAssignedToggle"
+                             v-model="showAssigned"
                              v-tooltip="'Auch Dienste anzeigen, die bereits besetzt sind'"
                          />
                      </div>
@@ -279,7 +273,7 @@ onMounted(loadData);
                          :all-responses="allResponses"
                          :user-responses="userResponses"
                          :current-user="currentUser!"
-                         :hide-assigned="hideAssigned"
+                         :show-assigned="showAssigned"
                          @response-saved="handleResponseSaved"
                      />
                  </div>

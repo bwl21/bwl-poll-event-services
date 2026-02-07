@@ -10,6 +10,9 @@ import type {
     CustomModuleDataValue,
     CustomModuleDataValueCreate,
 } from "./ct-types";
+import { createLogger } from './logger';
+
+const debugLog = createLogger('KV-STORE');
 
 /**
  * ────────────────────────────────────────────────
@@ -39,7 +42,7 @@ export async function getModule(
         );
     }
 
-    console.log(`Module ${extensionkey} found:`, module);
+    debugLog(`Module ${extensionkey} found:`, module);
 
     return module;
 }

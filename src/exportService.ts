@@ -16,6 +16,13 @@ import * as XLSX from 'xlsx';
 import type { EventWithServices, ServicePollEntry } from './types';
 import { prepareResponseRows, formatResponse, formatTimestamp } from './pollService';
 
+function escapeForExcel(value: string): string {
+    if (/^[=+\-@\t\r]/.test(value)) {
+        return `'${value}`;
+    }
+    return value;
+}
+
 interface ExportRow {
     'Event': string;
     'Wochentag': string;
@@ -40,17 +47,17 @@ export function exportToExcel(
 
     // Convert to Excel format
     const rows: ExportRow[] = preparedRows.map(row => ({
-        'Event': row.eventName,
+        'Event': escapeForExcel(row.eventName),
         'Wochentag': row.weekday,
         'Datum': row.date,
         'Uhrzeit': row.time,
-        'Dienst': row.serviceName,
-        'Besetzung': row.assignment,
-        'Benutzer': row.userName,
+        'Dienst': escapeForExcel(row.serviceName),
+        'Besetzung': escapeForExcel(row.assignment),
+        'Benutzer': escapeForExcel(row.userName),
         'Antwort': formatResponse(row.response),
-        'Kommentar': row.comment,
+        'Kommentar': escapeForExcel(row.comment),
         'Zeitstempel': row.timestamp ? formatTimestamp(row.timestamp) : '',
-        'Bearbeitet von': row.editedBy || '',
+        'Bearbeitet von': row.editedBy ? escapeForExcel(row.editedBy) : '',
         'Bearbeitungsdatum': row.editedAt ? formatTimestamp(row.editedAt) : '',
     }));
 

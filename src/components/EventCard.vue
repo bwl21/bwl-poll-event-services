@@ -1,29 +1,22 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import Card from 'primevue/card';
-import Button from 'primevue/button';
 import ServiceRow from './ServiceRow.vue';
+import { createLogger } from '../utils/logger';
 import type {
     EventWithServices,
     ServicePollEntry,
     UserInfo,
 } from '../types';
 
-// Debug logging controlled by ?debug URL parameter
-const DEBUG = new URLSearchParams(window.location.search).has('debug');
-
-function debugLog(...args: any[]): void {
-    if (DEBUG) {
-        console.log('[EVENT-CARD DEBUG]', ...args);
-    }
-}
+const debugLog = createLogger('EVENT-CARD');
 
 const props = defineProps<{
     event: EventWithServices;
     allResponses: ServicePollEntry[];
     userResponses: ServicePollEntry[];
     currentUser: UserInfo;
-    hideAssigned: boolean;
+    showAssigned: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -79,7 +72,7 @@ const sortedServices = computed(() => {
     });
     
     // Filter out assigned services if toggle is OFF (default behavior)
-    if (!props.hideAssigned) {
+    if (!props.showAssigned) {
         services = services.filter(
             (service) => !service.assignments || service.assignments.length === 0
         );
@@ -145,8 +138,8 @@ function getOtherResponsesForService(serviceId: number): ServicePollEntry[] {
                             :key="service.id"
                             :event-id="event.id"
                             :service="service"
-                            :user-response="getUserResponseForService(service.id)"
-                            :other-responses="getOtherResponsesForService(service.id)"
+                            :user-response="getUserResponseForService(service.serviceId)"
+                            :other-responses="getOtherResponsesForService(service.serviceId)"
                             :current-user="currentUser"
                             layout="table"
                             @response-saved="emit('response-saved', $event)"
@@ -162,8 +155,8 @@ function getOtherResponsesForService(serviceId: number): ServicePollEntry[] {
                     :key="service.id"
                     :event-id="event.id"
                     :service="service"
-                    :user-response="getUserResponseForService(service.id)"
-                    :other-responses="getOtherResponsesForService(service.id)"
+                    :user-response="getUserResponseForService(service.serviceId)"
+                    :other-responses="getOtherResponsesForService(service.serviceId)"
                     :current-user="currentUser"
                     layout="card"
                     @response-saved="emit('response-saved', $event)"

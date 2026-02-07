@@ -4,6 +4,7 @@ import Button from 'primevue/button';
 import Textarea from 'primevue/textarea';
 import Tag from 'primevue/tag';
 import { savePollResponse } from '../pollService';
+import { createLogger } from '../utils/logger';
 import type {
     ServiceInfo,
     ServicePollEntry,
@@ -11,14 +12,10 @@ import type {
     UserInfo,
 } from '../types';
 
-// Debug logging controlled by ?debug URL parameter
-const DEBUG = new URLSearchParams(window.location.search).has('debug');
+const COMMENT_DEBOUNCE_MS = 1000;
+const STATUS_MESSAGE_DURATION_MS = 2000;
 
-function debugLog(...args: any[]): void {
-    if (DEBUG) {
-        console.log('[SERVICE-ROW DEBUG]', ...args);
-    }
-}
+const debugLog = createLogger('SERVICE-ROW');
 
 const props = defineProps<{
     eventId: number;
@@ -104,7 +101,7 @@ async function saveResponse() {
 
         const entry: ServicePollEntry = {
             eventId: props.eventId,
-            serviceId: props.service.id,
+            serviceId: props.service.serviceId,
             userId: props.currentUser.id,
             userName: props.currentUser.name,
             response: selectedResponse.value,
@@ -117,7 +114,7 @@ async function saveResponse() {
 
         setTimeout(() => {
             statusMessage.value = null;
-        }, 2000);
+        }, STATUS_MESSAGE_DURATION_MS);
     } catch (e) {
         debugLog('Error saving response:', e);
         statusMessage.value = { type: 'error', text: 'Fehler beim Speichern' };
@@ -132,7 +129,7 @@ function handleCommentInput() {
     }
     commentTimeout = setTimeout(async () => {
         await saveResponse();
-    }, 1000);
+    }, COMMENT_DEBOUNCE_MS);
 }
 
 function formatResponseList(responses: ServicePollEntry[]): string {

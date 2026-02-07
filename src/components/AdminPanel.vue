@@ -6,16 +6,10 @@ import Button from 'primevue/button';
 import AdminResponses from './AdminResponses.vue';
 import AdminConfig from './AdminConfig.vue';
 import { exportToExcel } from '../exportService';
+import { createLogger } from '../utils/logger';
 import type { ServicePollEntry, EventWithServices } from '../types';
 
-// Debug logging controlled by ?debug URL parameter
-const DEBUG = new URLSearchParams(window.location.search).has('debug');
-
-function debugLog(...args: any[]): void {
-    if (DEBUG) {
-        console.log('[ADMIN-PANEL DEBUG]', ...args);
-    }
-}
+const debugLog = createLogger('ADMIN-PANEL');
 
 const props = defineProps<{
     responses: ServicePollEntry[];

@@ -11,8 +11,12 @@ import InputText from 'primevue/inputtext';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import Textarea from 'primevue/textarea';
+import { useToast } from 'primevue/usetoast';
+import { createLogger } from '../utils/logger';
 import type { ServicePollEntry, EventWithServices, PollResponse } from '../types';
 import { deleteResponse, prepareResponseRows, formatResponse, formatTimestamp, saveAdminPollResponse, getServiceCandidates, getCurrentUser } from '../pollService';
+
+const debugLog = createLogger('ADMIN-RESPONSES');
 
 const props = defineProps<{
     responses: ServicePollEntry[];
@@ -23,6 +27,8 @@ const emit = defineEmits<{
     (e: 'response-deleted', entry: ServicePollEntry): void;
     (e: 'response-saved', entry: ServicePollEntry): void;
 }>();
+
+const toast = useToast();
 
 const deleteDialogVisible = ref(false);
 const selectedResponse = ref<any | null>(null);
@@ -55,7 +61,7 @@ const peopleOptions = computed(() => {
         label: name,
         value: id,
     }));
-    console.log('[AdminResponses] peopleOptions for service', editingResponse.value?.serviceId, ':', options);
+    debugLog('peopleOptions for service', editingResponse.value?.serviceId, ':', options);
     return options;
 });
 
@@ -84,7 +90,7 @@ const allRows = computed(() => {
 onMounted(async () => {
     try {
         currentUser.value = await getCurrentUser();
-        console.log('[AdminResponses] Current user:', currentUser.value);
+        debugLog('Current user:', currentUser.value);
     } catch (error) {
         console.error('[AdminResponses] Error loading current user:', error);
     }
@@ -135,19 +141,19 @@ async function openAddDialog(eventId?: number, serviceId?: number) {
     // Load service candidates (people from service groups)
     if (eventId && serviceId) {
         const event = props.events.find(e => e.id === eventId);
-        console.log('[openAddDialog] Event:', event);
+        debugLog('Event:', event);
         const service = event?.services.find(s => s.id === serviceId);
-        console.log('[openAddDialog] Service:', service);
-        console.log('[openAddDialog] Service groupIds:', service?.groupIds);
+        debugLog('Service:', service);
+        debugLog('Service groupIds:', service?.groupIds);
         if (service?.groupIds && service.groupIds.length > 0) {
             try {
                 serviceCandidates.value = await getServiceCandidates(service.groupIds);
-                console.log('[AdminResponses] Loaded service candidates:', Array.from(serviceCandidates.value.entries()));
+                debugLog('Loaded service candidates:', Array.from(serviceCandidates.value.entries()));
             } catch (error) {
                 console.error('[AdminResponses] Error loading service candidates:', error);
             }
         } else {
-            console.warn('[openAddDialog] No groupIds found for service');
+            debugLog('No groupIds found for service');
         }
     }
     
@@ -165,7 +171,7 @@ async function openEditDialog(row: any) {
         if (service?.groupIds && service.groupIds.length > 0) {
             try {
                 serviceCandidates.value = await getServiceCandidates(service.groupIds);
-                console.log('[AdminResponses] Loaded service candidates for edit:', Array.from(serviceCandidates.value.entries()));
+                debugLog('Loaded service candidates for edit:', Array.from(serviceCandidates.value.entries()));
             } catch (error) {
                 console.error('[AdminResponses] Error loading service candidates:', error);
             }
@@ -176,10 +182,10 @@ async function openEditDialog(row: any) {
 }
 
 async function saveEditingResponse() {
-    console.log('[saveEditingResponse] editingResponse.value:', editingResponse.value);
+    debugLog('editingResponse.value:', editingResponse.value);
     
     if (!editingResponse.value?.eventId || !editingResponse.value?.serviceId || !editingResponse.value?.userId) {
-        console.warn('[saveEditingResponse] Missing required fields');
+        debugLog('Missing required fields');
         return;
     }
 
@@ -187,7 +193,7 @@ async function saveEditingResponse() {
     try {
         // Get userName from serviceCandidates
         const userName = serviceCandidates.value.get(editingResponse.value.userId) || `User ${editingResponse.value.userId}`;
-        console.log('[saveEditingResponse] Saving with response:', editingResponse.value.response, 'comment:', editingResponse.value.comment, 'userName:', userName);
+        debugLog('Saving with response:', editingResponse.value.response, 'comment:', editingResponse.value.comment, 'userName:', userName);
         
         await saveAdminPollResponse(
             editingResponse.value.eventId,
@@ -204,11 +210,23 @@ async function saveEditingResponse() {
             ...editingResponse.value,
             userName,
         } as ServicePollEntry;
-        console.log('[AdminResponses] Emitting response-saved:', savedEntry);
+        debugLog('Emitting response-saved:', savedEntry);
         emit('response-saved', savedEntry);
+        toast.add({
+            severity: 'success',
+            summary: 'Gespeichert',
+            detail: 'Antwort wurde erfolgreich gespeichert',
+            life: 3000,
+        });
         editDialogVisible.value = false;
     } catch (error) {
         console.error('Error saving response:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Fehler beim Speichern',
+            detail: error instanceof Error ? error.message : 'Antwort konnte nicht gespeichert werden',
+            life: 5000,
+        });
     } finally {
         saving.value = false;
     }
@@ -238,8 +256,20 @@ async function handleDelete() {
             selectedResponse.value.userId
         );
         emit('response-deleted', selectedResponse.value);
+        toast.add({
+            severity: 'success',
+            summary: 'Gelöscht',
+            detail: 'Antwort wurde erfolgreich gelöscht',
+            life: 3000,
+        });
     } catch (error) {
         console.error('Error deleting response:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Fehler beim Löschen',
+            detail: error instanceof Error ? error.message : 'Antwort konnte nicht gelöscht werden',
+            life: 5000,
+        });
     } finally {
         deleting.value = false;
         deleteDialogVisible.value = false;
