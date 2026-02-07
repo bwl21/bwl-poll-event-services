@@ -157,12 +157,28 @@ Die Admin-Oberfläche hat **3 Unterbereiche:**
 
 **Was sehen Sie:**
 - Tabellarische Übersicht aller Umfrageantworten
-- Spalten: Event, Dienst, Benutzer, Antwort (Ja/Vielleicht/Nein), Kommentar, Eingabe-Zeit, Bearbeitet von, Bearbeitungs-Zeit
+- Spalten: Event, Wochentag, Datum, Uhrzeit, Dienst, Besetzung, Benutzer, Antwort (Ja/Vielleicht/Nein), Kommentar, Eingabe-Zeit, Bearbeitet von, Bearbeitungs-Zeit
 
 **Funktionen:**
-- **Sortieren**: Klick auf Spalten-Header zum Sortieren
-- **Filtern**: Nach Event, Dienst oder Benutzer filtern (falls verfügbar)
-- **Bearbeiten**: Einzelne Antworten ändern (Antwort, Kommentar)
+
+**Leere Services anzeigen (Toggle)**
+- 💡 **OFF (default)** = Zeigt nur Services mit Antworten
+- 💡 **ON** = Zeigt auch Services ohne Antworten
+
+**Suchen (Suchfeld)**
+- Globale Suche über alle Felder: Event, Dienst, Benutzer, Kommentare
+- Tippen Sie einen Begriff ein, um die Tabelle zu filtern
+- Beispiele:
+  - "Gottesdienst" → zeigt alle Antworten zum Gottesdienst
+  - "Anna" → zeigt alle Antworten von Anna
+  - "Lobpreis" → zeigt alle Antworten zum Dienst Lobpreis
+
+**Sortieren**
+- Klick auf Spalten-Header zum Sortieren (A-Z oder Z-A)
+- Multi-Sort: Klick auf mehrere Header, um nach mehreren Kriterien zu sortieren
+
+**Bearbeiten**
+- Einzelne Antworten ändern (Antwort, Kommentar)
   - Klick auf eine Antwort öffnet ein Bearbeitungs-Dialog
   - Ändern Sie die Antwort (Ja/Vielleicht/Nein) oder den Kommentar
   - Beim Speichern wird `editedBy` auf Ihren Namen gesetzt und `editedAt` auf aktuelles Datum

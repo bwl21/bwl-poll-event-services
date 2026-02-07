@@ -54,6 +54,19 @@ const userResponses = computed(() => {
     return allResponses.value.filter((r) => r.userId === currentUser.value!.id);
 });
 
+const visibleEvents = computed(() => {
+    return events.value.filter((event) => {
+        // If hideAssigned is false, only show events with unassigned services
+        if (!hideAssigned.value) {
+            return event.services.some(
+                (service) => !service.assignments || service.assignments.length === 0
+            );
+        }
+        // If hideAssigned is true, show all events
+        return true;
+    });
+});
+
 // Helper: Convert local date to YYYY-MM-DD format (avoid timezone offset issues)
 function getLocalDateString(date: Date): string {
     const year = date.getFullYear();
@@ -260,7 +273,7 @@ onMounted(loadData);
 
                 <div v-else class="events-list">
                      <EventCard
-                         v-for="event in events"
+                         v-for="event in visibleEvents"
                          :key="event.id"
                          :event="event"
                          :all-responses="allResponses"

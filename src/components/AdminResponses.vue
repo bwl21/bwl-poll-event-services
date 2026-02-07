@@ -8,6 +8,8 @@ import ToggleSwitch from 'primevue/toggleswitch';
 import Tag from 'primevue/tag';
 import Dropdown from 'primevue/dropdown';
 import InputText from 'primevue/inputtext';
+import IconField from 'primevue/iconfield';
+import InputIcon from 'primevue/inputicon';
 import Textarea from 'primevue/textarea';
 import type { ServicePollEntry, EventWithServices, PollResponse } from '../types';
 import { deleteResponse, prepareResponseRows, formatResponse, formatTimestamp, saveAdminPollResponse, getServiceCandidates, getCurrentUser } from '../pollService';
@@ -26,6 +28,7 @@ const deleteDialogVisible = ref(false);
 const selectedResponse = ref<any | null>(null);
 const deleting = ref(false);
 const showEmptyServices = ref(true);
+const globalFilter = ref('');
 
 // Edit/Add dialog
 const editDialogVisible = ref(false);
@@ -58,7 +61,23 @@ const peopleOptions = computed(() => {
 
 // Use shared data preparation logic (same as Excel export)
 const allRows = computed(() => {
-    return prepareResponseRows(props.events, props.responses, showEmptyServices.value);
+    const rows = prepareResponseRows(props.events, props.responses, showEmptyServices.value);
+    
+    // Apply global filter
+    if (!globalFilter.value.trim()) {
+        return rows;
+    }
+    
+    const filterLower = globalFilter.value.toLowerCase();
+    return rows.filter(row => 
+        (row.eventName?.toLowerCase().includes(filterLower)) ||
+        (row.weekday?.toLowerCase().includes(filterLower)) ||
+        (row.date?.toLowerCase().includes(filterLower)) ||
+        (row.time?.toLowerCase().includes(filterLower)) ||
+        (row.serviceName?.toLowerCase().includes(filterLower)) ||
+        (row.userName?.toLowerCase().includes(filterLower)) ||
+        (row.comment?.toLowerCase().includes(filterLower))
+    );
 });
 
 // Load current user on mount
@@ -232,23 +251,33 @@ async function handleDelete() {
 <template>
     <div class="admin-responses">
         <div class="controls-container">
-            <div class="toggle-container">
-                <label for="showEmpty">Leere Services anzeigen</label>
-                <ToggleSwitch id="showEmpty" v-model="showEmptyServices" />
-            </div>
-        </div>
-        
-        <DataTable 
-            :value="allRows" 
-            paginator 
-            :rows="50" 
-            :rowsPerPageOptions="[10, 25, 50, 100]"
-            sortMode="multiple"
-            removableSort
-            stripedRows
-            size="small"
-            :emptyMessage="'Keine Antworten gefunden.'"
-        >
+             <div class="toggle-container">
+                 <label for="showEmpty">Leere Services anzeigen</label>
+                 <ToggleSwitch id="showEmpty" v-model="showEmptyServices" />
+             </div>
+             <div class="search-container">
+                 <IconField>
+                     <InputIcon class="pi pi-search"></InputIcon>
+                     <InputText 
+                         v-model="globalFilter" 
+                         placeholder="Suchen..."
+                         class="search-input"
+                     />
+                 </IconField>
+             </div>
+         </div>
+         
+         <DataTable 
+             :value="allRows" 
+             paginator 
+             :rows="50" 
+             :rowsPerPageOptions="[10, 25, 50, 100]"
+             sortMode="multiple"
+             removableSort
+             stripedRows
+             size="small"
+             :emptyMessage="'Keine Antworten gefunden.'"
+         >
             <Column field="eventName" header="Event" sortable></Column>
             <Column field="weekday" header="Wochentag" sortable></Column>
             <Column field="date" header="Datum" sortable></Column>
@@ -411,6 +440,10 @@ async function handleDelete() {
 </template>
 
 <style scoped>
+.admin-responses {
+    width: 100%;
+}
+
 .controls-container {
     display: flex;
     align-items: center;
@@ -431,6 +464,16 @@ async function handleDelete() {
     font-size: 0.875rem;
     color: #666;
     margin: 0;
+}
+
+.search-container {
+    margin-left: auto;
+    flex: 1;
+    max-width: 300px;
+}
+
+.search-input {
+    width: 100%;
 }
 
 .edit-form {
