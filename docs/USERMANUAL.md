@@ -470,6 +470,7 @@ Nach der Installation können Sie testen:
 - 🏗️ Toggle umbenannt: "hideAssigned" → "showAssigned" (URL-Parameter: `showAssigned=true`)
 - 🏗️ Zentralisiertes Debug-Logging über `?debug` URL-Parameter
 - 🏗️ Datum-Formatierung konsolidiert in gemeinsames Modul
+- 📦 PrimeIcons werden jetzt im Bundle mitgeliefert (kein CDN-Aufruf mehr nötig)
 
 **Version 0.4.2** | Feb 2026
 - ✨ Neue Feature: Filter-Toggle "Auch besetzte anzeigen" zum Fokus auf unbesetzte Dienste

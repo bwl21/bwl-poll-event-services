@@ -4,7 +4,7 @@ import ToastService from 'primevue/toastservice';
 import FloatingVue from 'floating-vue';
 import 'floating-vue/dist/style.css';
 import Aura from '@primeuix/themes/aura';
-// Note: primeicons loaded from CDN in index.html
+import 'primeicons/primeicons.css';
 
 // Import only used PrimeVue components
 import Button from 'primevue/button';
