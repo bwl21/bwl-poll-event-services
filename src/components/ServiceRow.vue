@@ -155,6 +155,7 @@ const allComments = computed(() => {
     <tr v-if="layout === 'table'" class="service-row">
         <td class="service-name">
             <strong>{{ service.name }}</strong>
+            <span v-if="service.categoryName" class="service-category">{{ service.categoryName }}</span>
         </td>
         <td class="response-buttons">
             <div class="button-group">
@@ -266,7 +267,10 @@ const allComments = computed(() => {
     <!-- Card layout (mobile) -->
     <div v-else class="service-card">
         <div class="service-card-header">
-            <strong>{{ service.name }}</strong>
+            <div>
+                <strong>{{ service.name }}</strong>
+                <span v-if="service.categoryName" class="service-category">{{ service.categoryName }}</span>
+            </div>
             <Tag
                 :value="assignmentDisplay.text"
                 :severity="assignmentDisplay.severity"
@@ -388,6 +392,13 @@ const allComments = computed(() => {
     min-width: 110px;
     word-wrap: break-word;
     word-break: break-word;
+}
+
+.service-category {
+    display: block;
+    font-size: 0.75rem;
+    color: #999;
+    font-weight: normal;
 }
 
 .button-group {

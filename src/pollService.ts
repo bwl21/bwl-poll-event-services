@@ -139,6 +139,11 @@ export async function fetchEventsWithServices(
         // Get all services to check which groups they belong to
         const masterData = await churchtoolsClient.get<any>('/event/masterdata');
         const allServices: Service[] = masterData.services || [];
+        const serviceGroups: any[] = masterData.serviceGroups || [];
+        const serviceGroupMap = new Map<number, string>();
+        for (const sg of serviceGroups) {
+            serviceGroupMap.set(sg.id, sg.name || '');
+        }
 
         // Get service configurations (votes visibility and enabled status)
         const serviceConfigs = await getServiceConfigs();
@@ -213,15 +218,18 @@ export async function fetchEventsWithServices(
                             });
                         }
 
+                        const categoryName = serviceGroupMap.get((serviceDef as any)?.serviceGroupId) || undefined;
+
                         return {
                             id: eventService.id!,
                             name: serviceName,
                             serviceId: eventService.serviceId!,
+                            categoryName,
                             sortKey: serviceDef?.sortKey,
                             isValid: eventService.isValid,
                             assignments,
-                            votesVisible: votesVisibilityMap.get(eventService.serviceId!) ?? true, // Default to visible
-                            groupIds: serviceDef?.groupIds || [], // Store group IDs for finding eligible people
+                            votesVisible: votesVisibilityMap.get(eventService.serviceId!) ?? true,
+                            groupIds: serviceDef?.groupIds || [],
                         };
                     });
 

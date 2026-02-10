@@ -35,6 +35,7 @@ export interface ServiceInfo {
     id: number;
     name: string;
     serviceId: number;
+    categoryName?: string;
     sortKey?: number;
     isValid?: boolean;
     assignments?: ServiceAssignment[];
