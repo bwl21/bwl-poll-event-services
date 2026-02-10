@@ -214,7 +214,7 @@ export async function fetchEventsWithServices(
                             assignments.push({
                                 personId: person.domainId || 0,
                                 personName,
-                                isConfirmed: eventService.isValid === true,
+                                isConfirmed: eventService.isAccepted === true,
                             });
                         }
 
