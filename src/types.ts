@@ -60,6 +60,7 @@ export interface PreparedResponseRow {
     date: string;
     time: string;
     serviceName: string;
+    serviceCategoryName?: string;
     assignment: string;
     userName: string;
     response: string | null;

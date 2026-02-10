@@ -312,7 +312,16 @@ async function handleDelete() {
             <Column field="weekday" header="Wochentag" sortable></Column>
             <Column field="date" header="Datum" sortable></Column>
             <Column field="time" header="Uhrzeit" sortable></Column>
-            <Column field="serviceName" header="Dienst" sortable></Column>
+            <Column field="serviceName" header="Dienst" sortable>
+                <template #body="slotProps">
+                    <div>
+                        <strong>{{ slotProps.data.serviceName }}</strong>
+                        <div v-if="slotProps.data.serviceCategoryName" class="service-category">
+                            {{ slotProps.data.serviceCategoryName }}
+                        </div>
+                    </div>
+                </template>
+            </Column>
             <Column field="assignment" header="Besetzung" sortable>
                 <template #body="slotProps">
                     {{ slotProps.data.assignment || '-' }}
@@ -560,5 +569,10 @@ async function handleDelete() {
     font-size: 0.75rem;
     color: #666;
     font-style: italic;
+}
+
+.service-category {
+    font-size: 0.75rem;
+    font-weight: normal;
 }
 </style>

@@ -392,12 +392,12 @@ const allComments = computed(() => {
     min-width: 110px;
     word-wrap: break-word;
     word-break: break-word;
+    font-weight: bold;
 }
 
 .service-category {
     display: block;
     font-size: 0.75rem;
-    color: #999;
     font-weight: normal;
 }
 

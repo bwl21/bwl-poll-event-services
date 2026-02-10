@@ -461,7 +461,11 @@ Nach der Installation können Sie testen:
 
 ---
 
-**Version 0.6.0** | Letzte Aktualisierung: Feb 2026
+**Version 0.6.1** | Letzte Aktualisierung: Feb 2026
+- ✨ Dienstkategorie wird unterhalb des Dienstnamens angezeigt (Umfrage-Ansicht, Admin-Tabelle, Admin-Konfiguration)
+- 🎨 Dienstname in der Admin-Tabelle nun fett dargestellt
+
+**Version 0.6.0** | Feb 2026
 - 🐛 Fehlende Kalender-Berechtigung blockiert nicht mehr die gesamte Anzeige — Dienste erscheinen, nur Räume fehlen mit Hinweis
 - 📦 Bundle-Größe reduziert: nur noch WOFF2-Font statt 5 Legacy-Formate (~597 KB eingespart)
 
