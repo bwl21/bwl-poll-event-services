@@ -5,6 +5,7 @@ import { churchtoolsClient } from '@churchtools/churchtools-client';
 import type { Event, Person, Service } from './utils/ct-types';
 import type {
     EventWithServices,
+    FetchEventsResult,
     ServicePollEntry,
     PollResponse,
     UserInfo,
@@ -68,7 +69,7 @@ export function getPollConfig(): PollConfig {
 export async function fetchEventsWithServices(
     startDate: string,
     days: number
-): Promise<EventWithServices[]> {
+): Promise<FetchEventsResult> {
     const start = new Date(startDate);
     const end = new Date(start);
     end.setDate(end.getDate() + days);
@@ -92,26 +93,30 @@ export async function fetchEventsWithServices(
         }
         debugLog('Calendar IDs found:', Array.from(calendarIds));
 
-        // Fetch appointments with resource bookings for all calendars
+        // Fetch appointments with resource bookings per calendar (individual requests to avoid 403 on inaccessible calendars)
         const appointmentResources = new Map<number, any[]>();
+        const failedCalendarIds = new Set<number>();
         if (calendarIds.size > 0) {
-            const calendarIdParams = Array.from(calendarIds)
-                .map((id) => `calendar_ids[]=${id}`)
-                .join('&');
-            const appointmentUrl = `/calendars/appointments?${calendarIdParams}&from=${fromDate}&to=${toDate}&include[]=bookings`;
-            debugLog('Fetching appointments:', appointmentUrl);
-            const appointments = await churchtoolsClient.get<any[]>(appointmentUrl);
-            debugLog('Appointments received:', appointments.length);
-            
-            for (const apt of appointments) {
-                const appointmentId = apt.base?.id || apt.id;
-                const bookings = apt.base?.bookings || apt.bookings;
-                debugLog('Appointment', appointmentId, 'structure:', apt);
-                if (appointmentId && bookings && bookings.length > 0) {
-                    debugLog('Appointment', appointmentId, 'bookings:', bookings);
-                    appointmentResources.set(appointmentId, bookings);
+            const calendarFetches = Array.from(calendarIds).map(async (calId) => {
+                try {
+                    const url = `/calendars/appointments?calendar_ids[]=${calId}&from=${fromDate}&to=${toDate}&include[]=bookings`;
+                    const appointments = await churchtoolsClient.get<any[]>(url);
+                    for (const apt of appointments) {
+                        const appointmentId = apt.base?.id || apt.id;
+                        const bookings = apt.base?.bookings || apt.bookings;
+                        if (appointmentId && bookings && bookings.length > 0) {
+                            appointmentResources.set(appointmentId, bookings);
+                        }
+                    }
+                } catch (e: any) {
+                    if (e?.response?.status === 403 || e?.message?.includes('403')) {
+                        failedCalendarIds.add(calId);
+                    }
+                    debugLog('Skipping calendar', calId, '(no access or error):', e?.message);
                 }
-            }
+            });
+            await Promise.all(calendarFetches);
+            debugLog('Appointments loaded for', appointmentResources.size, 'events, failed calendars:', Array.from(failedCalendarIds));
         }
 
         // Get current user to get their ID
@@ -121,10 +126,14 @@ export async function fetchEventsWithServices(
         const userGroups = await churchtoolsClient.get<any[]>(
             `/persons/${user.id}/groups`
         );
+        debugLog('User groups raw response:', JSON.stringify(userGroups.slice(0, 3)));
         const userGroupIds = userGroups.map((g: any) => {
-            const groupId = g.group?.domainIdentifier;
-            return groupId ? parseInt(groupId, 10) : null;
-        }).filter((id): id is number => id !== null);
+            const groupId = g.group?.domainIdentifier
+                ?? g.group?.id
+                ?? g.groupId
+                ?? g.id;
+            return groupId ? parseInt(String(groupId), 10) : null;
+        }).filter((id): id is number => id !== null && !isNaN(id));
         debugLog('User:', user.id, user.name, 'Groups:', userGroupIds);
 
         // Get all services to check which groups they belong to
@@ -230,21 +239,27 @@ export async function fetchEventsWithServices(
                     }
                 }
 
+                const eventCalendarId = (event as any).calendar?.domainIdentifier
+                    ? parseInt((event as any).calendar.domainIdentifier, 10)
+                    : null;
+                const resourcesUnavailable = eventCalendarId !== null && failedCalendarIds.has(eventCalendarId);
+
                 return {
                     id: event.id!,
                     name: event.name || '',
                     startDate: event.startDate || '',
                     endDate: event.endDate,
                     resources: resources.length > 0 ? resources : undefined,
+                    resourcesUnavailable: resourcesUnavailable || undefined,
                     services,
                 };
             })
             .filter((event) => event.services.length > 0);
 
-        return eventsWithServices;
+        return { events: eventsWithServices };
     } catch (error) {
         console.error('Error fetching events with services:', error);
-        return [];
+        return { events: [] };
     }
 }
 

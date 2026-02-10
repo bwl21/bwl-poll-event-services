@@ -65,7 +65,7 @@ async function loadData() {
         currentUser.value = await getCurrentUser();
 
         const startStr = getLocalDateString(startDate.value);
-        const [eventsData, responsesData, adminStatus] = await Promise.all([
+        const [eventsResult, responsesData, adminStatus] = await Promise.all([
             fetchEventsWithServices(startStr, days.value),
             loadAllPollResponses(),
             isUserAdmin(),
@@ -73,7 +73,7 @@ async function loadData() {
 
         if (seq !== loadSeq) return;
 
-        events.value = eventsData;
+        events.value = eventsResult.events;
         allResponses.value = responsesData;
         userIsAdmin.value = adminStatus;
         debugLog('User is admin:', adminStatus);

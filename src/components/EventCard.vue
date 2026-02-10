@@ -118,6 +118,9 @@ function getOtherResponsesForService(serviceId: number): ServicePollEntry[] {
                 <div v-if="event.resources && event.resources.length > 0" class="event-resources">
                     {{ resourceNames }}
                 </div>
+                <div v-else-if="event.resourcesUnavailable" class="event-resources unavailable">
+                    <i class="pi pi-lock"></i> Keine Berechtigung, die Räume zu diesem Event zu sehen
+                </div>
                 </div>
                 </template>
                 <template #content>
@@ -197,6 +200,11 @@ function getOtherResponsesForService(serviceId: number): ServicePollEntry[] {
     color: #999;
     font-size: 0.85em;
     margin-top: 2px;
+}
+
+.event-resources.unavailable {
+    color: #b08800;
+    font-style: italic;
 }
 
 .link-button {
