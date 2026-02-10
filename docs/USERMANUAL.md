@@ -461,7 +461,11 @@ Nach der Installation können Sie testen:
 
 ---
 
-**Version 0.5.0** | Letzte Aktualisierung: Feb 2026
+**Version 0.6.0** | Letzte Aktualisierung: Feb 2026
+- 🐛 Fehlende Kalender-Berechtigung blockiert nicht mehr die gesamte Anzeige — Dienste erscheinen, nur Räume fehlen mit Hinweis
+- 📦 Bundle-Größe reduziert: nur noch WOFF2-Font statt 5 Legacy-Formate (~597 KB eingespart)
+
+**Version 0.5.0** | Feb 2026
 - 🐛 Kritischer Bugfix: Dienst-ID Zuordnung korrigiert (Antworten werden nun korrekt dem richtigen Dienst zugeordnet)
 - 🔒 Sicherheit: Excel-Export schützt nun vor Formel-Injection in Kommentaren und Benutzernamen
 - 🔒 Sicherheit: Admin-Funktionen prüfen nun Berechtigungen serverseitig
