@@ -27,6 +27,7 @@ export interface EventWithServices {
     startDate: string;
     endDate?: string;
     resources?: EventResource[];
+    resourcesUnavailable?: boolean;
     services: ServiceInfo[];
 }
 
@@ -69,6 +70,10 @@ export interface PreparedResponseRow {
     eventId: number;
     serviceId: number;
     userId: number;
+}
+
+export interface FetchEventsResult {
+    events: EventWithServices[];
 }
 
 export interface PollConfig {
