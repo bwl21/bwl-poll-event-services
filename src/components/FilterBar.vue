@@ -94,6 +94,27 @@ function handleAssignedChange(value: boolean) {
 function handleCopyUrl() {
   emit('copy-url');
 }
+
+function getServiceTooltip(): string {
+  if (props.modelValue.services.length === 0) {
+    return 'Nach Diensten filtern';
+  }
+  const selected = props.availableServices
+    .filter(([id]) => props.modelValue.services.includes(id))
+    .map(([, name]) => name)
+    .join(', ');
+  return `Dienste: ${selected}`;
+}
+
+function getRoomTooltip(): string {
+  if (props.modelValue.rooms.length === 0) {
+    return 'Nach Räumen filtern';
+  }
+  return `Räume: ${props.modelValue.rooms.join(', ')}`;
+}
+
+const serviceTooltip = computed(() => getServiceTooltip());
+const roomTooltip = computed(() => getRoomTooltip());
 </script>
 
 <template>
@@ -137,7 +158,7 @@ function handleCopyUrl() {
       </div>
 
       <!-- Dienste -->
-      <div class="filter-item-wrapper" v-tooltip="'Nach Diensten filtern'">
+      <div class="filter-item-wrapper" v-tooltip="serviceTooltip">
         <label class="filter-label-small">Dienste</label>
         <ServiceFilter
           :model-value="modelValue.services"
@@ -148,7 +169,7 @@ function handleCopyUrl() {
       </div>
 
       <!-- Räume -->
-      <div class="filter-item-wrapper" v-tooltip="'Nach Räumen filtern'">
+      <div class="filter-item-wrapper" v-tooltip="roomTooltip">
         <label class="filter-label-small">Räume</label>
         <RoomFilter
           :model-value="modelValue.rooms"

@@ -37,9 +37,11 @@ function handleUpdate(selected: number[]) {
       option-label="label"
       option-value="value"
       placeholder="Dienste"
-      :show-toggle-all="false"
+      :show-toggle-all="true"
       :max-selected-labels="1"
       display="chip"
+      filter
+      filter-placeholder="Dienste suchen..."
       @update:model-value="handleUpdate"
     />
   </div>
