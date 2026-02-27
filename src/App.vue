@@ -2,6 +2,7 @@
 import { ref, onMounted, computed, defineAsyncComponent } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import EventCard from './components/EventCard.vue';
+import FilterBar from './components/FilterBar.vue';
 // Lazy load AdminPanel (only for admins)
 const AdminPanel = defineAsyncComponent(() => import('./components/AdminPanel.vue'));
 import {
@@ -13,7 +14,7 @@ import {
 } from './pollService';
 import { exportToExcel } from './exportService';
 import { createLogger } from './utils/logger';
-import { getLocalDateString } from './utils/date';
+import { getLocalDateString, formatDateOnly } from './utils/date';
 import type { EventWithServices, ServicePollEntry, UserInfo } from './types';
 
 const debugLog = createLogger('APP');
@@ -38,6 +39,17 @@ const days = ref(config.days);
 const urlParams = new URLSearchParams(window.location.search);
 const showAssigned = ref(urlParams.get('showAssigned') === 'true');
 
+// Filter state from URL params or defaults
+const filterServices = ref<number[]>(
+    urlParams.get('services')?.split(',').map(Number).filter(n => !isNaN(n)) || []
+);
+const filterRooms = ref<string[]>(
+    urlParams.get('rooms')?.split(',').map(decodeURIComponent) || []
+);
+const filterEventText = ref<string>(
+    urlParams.get('search') ? decodeURIComponent(urlParams.get('search')!) : ''
+);
+
 const userResponses = computed(() => {
     if (!currentUser.value) return [];
     return allResponses.value.filter((r) => r.userId === currentUser.value!.id);
@@ -52,6 +64,64 @@ const visibleEvents = computed(() => {
             );
         }
         // When showAssigned is true: show all events
+        return true;
+    });
+});
+
+// Available filter options
+const availableServices = computed<Array<[number, string]>>(() => {
+    const services = new Map<number, string>();
+    for (const event of events.value) {
+        for (const service of event.services) {
+            if (!services.has(service.serviceId)) {
+                services.set(service.serviceId, service.name);
+            }
+        }
+    }
+    // Sort alphabetically
+    return Array.from(services.entries()).sort((a, b) => a[1].localeCompare(b[1], 'de'));
+});
+
+const availableRooms = computed<string[]>(() => {
+    const rooms = new Set<string>();
+    for (const event of events.value) {
+        if (event.resources) {
+            for (const resource of event.resources) {
+                rooms.add(resource.name);
+            }
+        }
+    }
+    // Sort alphabetically
+    return Array.from(rooms).sort((a, b) => a.localeCompare(b, 'de'));
+});
+
+// Apply filters to visible events
+const filteredEvents = computed(() => {
+    return visibleEvents.value.filter((event) => {
+        // 1. Event text search (name or date)
+        if (filterEventText.value) {
+            const searchLower = filterEventText.value.toLowerCase();
+            const nameMatch = event.name.toLowerCase().includes(searchLower);
+            const dateMatch = formatDateOnly(event.startDate).includes(searchLower);
+            if (!nameMatch && !dateMatch) return false;
+        }
+
+        // 2. Services filter
+        if (filterServices.value.length > 0) {
+            const hasService = event.services.some((s) =>
+                filterServices.value.includes(s.serviceId)
+            );
+            if (!hasService) return false;
+        }
+
+        // 3. Rooms filter
+        if (filterRooms.value.length > 0) {
+            const hasRoom = event.resources?.some((r) =>
+                filterRooms.value.includes(r.name)
+            );
+            if (!hasRoom) return false;
+        }
+
         return true;
     });
 });
@@ -108,11 +178,56 @@ function handleExport() {
     exportToExcel(events.value, allResponses.value);
 }
 
-function copyURLToClipboard() {
-    // Get current settings
+function updateURL() {
+    const params = new URLSearchParams(window.location.search);
+    
+    // Preserve existing params
     const startStr = getLocalDateString(startDate.value);
+    params.set('start', startStr);
+    params.set('days', days.value.toString());
+    params.set('showAssigned', showAssigned.value.toString());
+    
+    // Update filter params
+    if (filterServices.value.length > 0) {
+        params.set('services', filterServices.value.join(','));
+    } else {
+        params.delete('services');
+    }
+    
+    if (filterRooms.value.length > 0) {
+        params.set('rooms', filterRooms.value.map(encodeURIComponent).join(','));
+    } else {
+        params.delete('rooms');
+    }
+    
+    if (filterEventText.value) {
+        params.set('search', encodeURIComponent(filterEventText.value));
+    } else {
+        params.delete('search');
+    }
+    
+    window.history.replaceState({}, '', `?${params.toString()}`);
+}
+
+function handleFilterChange(filters: { services: number[]; rooms: string[]; search: string }) {
+    filterServices.value = filters.services;
+    filterRooms.value = filters.rooms;
+    filterEventText.value = filters.search;
+    updateURL();
+}
+
+function resetFilters() {
+    filterServices.value = [];
+    filterRooms.value = [];
+    filterEventText.value = '';
+    updateURL();
+}
+
+function copyURLToClipboard() {
+    // Get current settings including filters
+    const params = new URLSearchParams(window.location.search);
     const baseURL = window.location.origin + window.location.pathname;
-    const urlWithParams = `${baseURL}?start=${startStr}&days=${days.value}&showAssigned=${showAssigned.value}`;
+    const urlWithParams = `${baseURL}?${params.toString()}`;
     
     // Copy to clipboard
     navigator.clipboard.writeText(urlWithParams).then(() => {
@@ -202,51 +317,21 @@ onMounted(loadData);
                     Es werden die Dienste angezeigt die durch eine deiner Gruppen besetzt werden können.
                 </p>
 
-                <div class="poll-controls">
-                    <div class="control-group">
-                         <label for="startDate" v-tooltip="'Startdatum für die Anzeige der Dienste'">Startdatum</label>
-                         <DatePicker
-                             id="startDate"
-                             v-model="startDate"
-                             dateFormat="dd.mm.yy"
-                             showIcon
-                             locale="de"
-                             :inline="false"
-                             @date-select="loadData"
-                             v-tooltip="'Wähle das Startdatum für die Dienste aus'"
-                         />
-                     </div>
-                     <div class="control-group">
-                         <label for="days" v-tooltip="'Anzahl der Tage ab Startdatum'">Anzahl Tage</label>
-                         <InputNumber
-                             id="days"
-                             v-model="days"
-                             :min="1"
-                             :max="365"
-                             showButtons
-                             @update:modelValue="loadData"
-                             v-tooltip="'Gib die Anzahl der Tage ein (1-365)'"
-                         />
-                     </div>
-                     <div class="control-group toggle-group">
-                         <label for="showAssignedToggle">Auch besetzte anzeigen</label>
-                         <ToggleSwitch 
-                             id="showAssignedToggle"
-                             v-model="showAssigned"
-                             v-tooltip="'Auch Dienste anzeigen, die bereits besetzt sind'"
-                         />
-                     </div>
-                     <div class="control-group">
-                         <Button
-                             icon="pi pi-copy"
-                             severity="info"
-                             text
-                             rounded
-                             @click="copyURLToClipboard"
-                             v-tooltip="'Aktuelle URL mit Einstellungen in Zwischenablage kopieren'"
-                         />
-                     </div>
-                     </div>
+                <FilterBar
+                    :model-value="{ services: filterServices, rooms: filterRooms, search: filterEventText }"
+                    :available-services="availableServices"
+                    :available-rooms="availableRooms"
+                    :filtered-events-count="filteredEvents.length"
+                    :start-date="startDate"
+                    :days="days"
+                    :show-assigned="showAssigned"
+                    @update:model-value="handleFilterChange"
+                    @update:start-date="(date) => { startDate = date; loadData(); }"
+                    @update:days="(value) => { days = value; loadData(); }"
+                    @update:show-assigned="(value) => { showAssigned = value; }"
+                    @reset="resetFilters"
+                    @copy-url="copyURLToClipboard"
+                />
 
                 <div v-if="loading" class="loading-container">
                     <ProgressSpinner />
@@ -265,15 +350,21 @@ onMounted(loadData);
                     </p>
                 </div>
 
+                <div v-else-if="filteredEvents.length === 0" class="empty-state">
+                    <i class="pi pi-inbox"></i>
+                    <p>Keine Events entsprechen den aktuellen Filtern.</p>
+                </div>
+
                 <div v-else class="events-list">
                      <EventCard
-                         v-for="event in visibleEvents"
+                         v-for="event in filteredEvents"
                          :key="event.id"
                          :event="event"
                          :all-responses="allResponses"
                          :user-responses="userResponses"
                          :current-user="currentUser!"
                          :show-assigned="showAssigned"
+                         :filter-services="filterServices.length > 0 ? filterServices : undefined"
                          @response-saved="handleResponseSaved"
                      />
                  </div>
@@ -383,40 +474,7 @@ onMounted(loadData);
     margin-right: 8px;
 }
 
-.poll-controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    margin-bottom: 24px;
-    padding: 16px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    align-items: flex-end;
-}
 
-.control-group {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.control-group label {
-    font-size: 0.875rem;
-    color: #666;
-}
-
-.toggle-group {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.toggle-group label {
-    font-size: 0.9rem;
-    color: #666;
-    margin: 0;
-    white-space: nowrap;
-}
 
 .loading-container {
     display: flex;

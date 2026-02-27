@@ -50,23 +50,67 @@ Alle Buttons, Eingabefelder und Tabs haben **hilfreiche Beschreibungen**, die du
 2. Navigieren zur **"Dienst-Umfrage"** Extension
 3. Oder direkt über den Menu-Punkt (falls konfiguriert)
 
-#### 2. Zeitraum einstellen (optional)
-Die Extension zeigt standardmäßig die nächsten **90 Tage** an.
+#### 2. Filter und Einstellungen (kompakte Box)
 
-**Zeitraum ändern:**
+Die Extension zeigt standardmäßig die nächsten **90 Tage** an. Alle Filter und Einstellungen befinden sich in einer kompakten Box mit zwei Zeilen:
+
+**Zeile 1: Zeitraum & Status**
 - **Startdatum**: Einen anderen Startpunkt auswählen (z.B. "15. Februar 2025")
-  - 💡 **Tooltip:** Hovere über das Label "Startdatum" oder das Eingabefeld, um eine Beschreibung zu sehen
-- **Anzahl Tage**: Die Spannweite anpassen (z.B. "30 Tage" für 1 Monat)
-  - 💡 **Tooltip:** Hovere über das Label "Anzahl Tage" oder das Eingabefeld für mehr Infos
-
-**Filter: Unbesetzte Dienste anzeigen**
-- **Toggle:** "Auch besetzte anzeigen" (standardmäßig OFF)
-  - 💡 **OFF (default)** = Zeigt nur Dienste, die noch nicht besetzt sind (ideal zum schnellen Ausfüllen)
+  - 💡 **Tooltip:** "Wähle das Startdatum für die Dienste"
+- **Tage**: Die Spannweite anpassen (z.B. "30" für 1 Monat)
+  - 💡 **Tooltip:** "Anzahl der Tage ab dem Startdatum"
+- **Bes.** (Besetzte): Toggle "Auch besetzte anzeigen" (standardmäßig OFF)
+  - 💡 **OFF (default)** = Zeigt nur Dienste, die noch nicht besetzt sind
   - 💡 **ON** = Zeigt alle Dienste, auch die bereits besetzten
-  - 💡 **Tooltip:** Hovere über das Toggle, um mehr zu erfahren
-- Diese Einstellung wird in der URL gespeichert (Parameter: `showAssigned=true/false`)
+  - 💡 **Tooltip:** "Auch bereits besetzte Dienste anzeigen"
+- **Kopieren**: Button zum Kopieren der aktuellen URL mit allen Einstellungen
 
-> **Hinweis:** Nur Events mit Diensten, für die Sie zuständig sind, werden angezeigt.
+**Zeile 2: Dienste, Räume & Event-Suche**
+- **Dienste**: Mehrfach-Dropdown zum Filtern nach Diensten
+  - Wähle einen oder mehrere Dienste
+  - 💡 **Tooltip:** "Nach Diensten filtern"
+  - Beispiel: "Orgel" wählen → nur Events mit Orgel werden angezeigt
+  
+- **Räume**: Mehrfach-Dropdown zum Filtern nach Räumen/Ressourcen
+  - Wähle einen oder mehrere Räume
+  - 💡 **Tooltip:** "Nach Räumen filtern"
+  - Beispiel: "Saal A" wählen → nur Events in Saal A werden angezeigt
+  
+- **Event**: Textsuche nach Event-Namen oder Datum
+  - Gib einen Suchtext ein (z.B. "Hochzeit" oder "27.02")
+  - 💡 **Tooltip:** "Nach Event-Namen oder Datum suchen"
+  - Sucht gleichzeitig in Event-Name und Datum
+
+**Zeile 3: Status & Aktionen**
+- **Kopieren-Button**: Kopiert die URL mit allen Einstellungen
+  - 💡 **Tooltip:** "Aktuelle URL mit allen Einstellungen kopieren"
+- **Filter-Badge**: Zeigt "X Filter" wenn Filter aktiv sind
+  - 💡 **Tooltip:** "Anzahl der aktiven Filter"
+- **Event-Counter**: Zeigt "42 Events" – die Anzahl angezeigter Events
+  - 💡 **Tooltip:** "Anzahl der angezeigten Events"
+- **Reset-Button**: Löscht alle Filter auf einmal (nur sichtbar wenn Filter aktiv)
+  - 💡 **Tooltip:** "Alle Filter löschen"
+
+**Filter-Kombinationen (AND-Logik):**
+- Alle Filter wirken zusammen:
+  - Dienst "Orgel" + Raum "Saal A" → nur Events mit Orgel UND in Saal A
+  - Dienst "Orgel" + Suche "Hochzeit" → nur Events mit Orgel UND "Hochzeit" im Namen
+  - Alle drei Filter → nur Events die ALLE Bedingungen erfüllen
+
+**URL-Sharing mit Filtern:**
+- Klick auf "Kopieren" speichert die URL mit:
+  - Startdatum und Anzahl Tage
+  - Alle aktiven Filter (Dienste, Räume, Suche)
+  - Toggle-Status ("Auch besetzte anzeigen")
+- Teile die kopierte URL mit Kollegen – diese sehen dann genau den gleichen Zeitraum und die gleichen Filter
+
+**Beispiel-URLs:**
+```
+Basis: ?start=2026-02-27&days=90
+Mit Filtern: ?start=2026-02-27&days=90&services=5,8&rooms=Saal%20A&search=Hochzeit
+```
+
+> **Hinweis:** Nur Events mit Diensten, für die Sie zuständig sind, werden angezeigt. Filter wirken zusätzlich dazu.
 
 **Ansicht:**
 ![Umfrage-Übersicht](screenshots/01-desktop-umfrage-overview.png)
@@ -461,7 +505,21 @@ Nach der Installation können Sie testen:
 
 ---
 
-**Version 0.6.1** | Letzte Aktualisierung: Feb 2026
+**Version 0.7.0** | Letzte Aktualisierung: Feb 2026
+- ✨ **Neue Filter-Features:**
+  - 🔍 Dienste-Filter: Mehrfachauswahl nach Service-Namen
+  - 🏠 Räume-Filter: Mehrfachauswahl nach Raum/Ressourcen
+  - 📝 Event-Suche: Textsuche nach Event-Name oder Datum
+  - 🎯 Filter wirken kombiniert (AND-Logik)
+  - 🔗 Alle Filter werden in URL gespeichert zum Sharing
+  - 📊 Kompakte Filter-Box mit Summary-Zeile (Kopieren, Filter-Count, Event-Counter)
+- 💡 Tooltips für alle Filter-Optionen hinzugefügt
+- 📱 Responsive Design für Desktop und Mobile
+- 🎨 Alle Filter-Widgets einheitliche Höhe und Styling
+- ✨ Dienste-Filter wirkt auch innerhalb von Events (zeigt nur gefilterte Dienste)
+
+**Version 0.6.2** | Feb 2026
+- 🐛 Bugfix: Besetzungsstatus nutzt nun `isAccepted` statt `isValid` — Personen werden korrekt als "Angefordert" oder "Zugesagt" angezeigt
 - ✨ Dienstkategorie wird unterhalb des Dienstnamens angezeigt (Umfrage-Ansicht, Admin-Tabelle, Admin-Konfiguration)
 - 🎨 Dienstname in der Admin-Tabelle nun fett dargestellt
 

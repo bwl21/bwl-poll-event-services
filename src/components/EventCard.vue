@@ -17,6 +17,7 @@ const props = defineProps<{
     userResponses: ServicePollEntry[];
     currentUser: UserInfo;
     showAssigned: boolean;
+    filterServices?: number[];
 }>();
 
 const emit = defineEmits<{
@@ -75,6 +76,13 @@ const sortedServices = computed(() => {
     if (!props.showAssigned) {
         services = services.filter(
             (service) => !service.assignments || service.assignments.length === 0
+        );
+    }
+    
+    // Filter by selected services (from service filter)
+    if (props.filterServices && props.filterServices.length > 0) {
+        services = services.filter(
+            (service) => props.filterServices!.includes(service.serviceId)
         );
     }
     
