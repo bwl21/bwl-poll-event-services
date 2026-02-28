@@ -106,7 +106,7 @@ function getResponseDisplay(response: PollResponse | null) {
     
     const displayMap = {
         yes: { icon: 'pi pi-check', severity: 'success', label: 'Ja' },
-        maybe: { icon: 'pi pi-question', severity: 'warning', label: 'Vielleicht' },
+        maybe: { icon: 'pi pi-question', severity: 'info', label: 'Vielleicht', color: '#ff9800' },
         no: { icon: 'pi pi-times', severity: 'danger', label: 'Nein' }
     };
     
@@ -334,6 +334,7 @@ async function handleDelete() {
                         :value="getResponseDisplay(slotProps.data.response).label" 
                         :severity="getResponseDisplay(slotProps.data.response).severity"
                         :icon="getResponseDisplay(slotProps.data.response).icon || undefined"
+                        :style="getResponseDisplay(slotProps.data.response).color ? { backgroundColor: getResponseDisplay(slotProps.data.response).color, color: '#000' } : {}"
                     />
                 </template>
             </Column>
