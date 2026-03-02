@@ -1,5 +1,5 @@
 ---
-Date: 2026-02-06
+Date: 2026-03-02
 Author: Bernhard Weichel
 ---
 
@@ -72,14 +72,16 @@ Die Extension zeigt standardmäßig die nächsten **90 Tage** an. Alle Filter un
   - Beispiel: "Orgel" wählen → nur Events mit Orgel werden angezeigt
   
 - **Räume**: Mehrfach-Dropdown zum Filtern nach Räumen/Ressourcen
-  - Wähle einen oder mehrere Räume
-  - 💡 **Tooltip:** "Nach Räumen filtern"
-  - Beispiel: "Saal A" wählen → nur Events in Saal A werden angezeigt
-  
+   - Wähle einen oder mehrere Räume
+   - 💡 **Tooltip:** "Nach Räumen filtern"
+   - Mit Suchfeld zum schnellen Finden von Räumen
+   - Beispiel: "Saal A" wählen → nur Events in Saal A werden angezeigt
+   
 - **Event**: Textsuche nach Event-Namen oder Datum
-  - Gib einen Suchtext ein (z.B. "Hochzeit" oder "27.02")
-  - 💡 **Tooltip:** "Nach Event-Namen oder Datum suchen"
-  - Sucht gleichzeitig in Event-Name und Datum
+   - Gib einen Suchtext ein (z.B. "Hochzeit" oder "27.02")
+   - 💡 **Tooltip:** "Nach Event-Namen oder Datum suchen"
+   - Case-insensitive Suche (Groß-/Kleinschreibung wird ignoriert)
+   - Sucht gleichzeitig in Event-Name und Datum
 
 **Zeile 3: Status & Aktionen**
 - **Kopieren-Button**: Kopiert die URL mit allen Einstellungen
@@ -238,6 +240,12 @@ Die Admin-Oberfläche hat **3 Unterbereiche:**
 - **Bearbeitungs-Zeit**: Wann die Antwort zuletzt geändert wurde (durch Sie oder den Mitarbeiter selbst)
 - **Bearbeitet von**: Wer hat die Antwort zuletzt geändert (Admin-Name oder Mitarbeiter-Name)
 - Beispiel: Mitarbeiter gibt "Ja" ein (31.1. 15:30), Sie ändern später zu "Nein" → "Bearbeitet von: Planer1" (31.1. 16:00)
+
+**Response-Status Farben (Admin-Panel):**
+- **🟢 Ja (Grün)**: Mitarbeiter kann den Dienst übernehmen
+- **🟠 Vielleicht (Orange)**: Mitarbeiter ist unsicher oder kann nur unter Bedingungen
+- **🔴 Nein (Rot)**: Mitarbeiter kann den Dienst nicht übernehmen
+- Die farbige Kennzeichnung hilft Ihnen, Status auf einen Blick zu erkennen
 
 #### b) **Service Config** - Dienste konfigurieren
 
@@ -505,7 +513,14 @@ Nach der Installation können Sie testen:
 
 ---
 
-**Version 0.7.0** | Letzte Aktualisierung: Feb 2026
+**Version 0.7.1** | Letzte Aktualisierung: Mar 2026
+- 🎨 **Admin-Panel Verbesserungen:**
+  - 🟠 "Vielleicht"-Antworten zeigen nun orange Farbe (zur Unterscheidung von "Ja" und "Nein")
+  - 📊 Bessere visuelle Unterscheidung der Response-Status im Admin-Tab
+- 💡 Erweiterte Filter-Dropdowns mit dynamischen Tooltips und Suchfunktion
+- 🔧 Performance-Optimierungen in Filter-Kombinationen
+
+**Version 0.7.0** | Feb 2026
 - ✨ **Neue Filter-Features:**
   - 🔍 Dienste-Filter: Mehrfachauswahl nach Service-Namen
   - 🏠 Räume-Filter: Mehrfachauswahl nach Raum/Ressourcen

@@ -62,6 +62,7 @@ export interface PreparedResponseRow {
     serviceName: string;
     serviceCategoryName?: string;
     assignment: string;
+    rooms: string; // Comma-separated list of room names
     userName: string;
     response: string | null;
     comment: string;

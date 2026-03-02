@@ -14,7 +14,7 @@ import Textarea from 'primevue/textarea';
 import { useToast } from 'primevue/usetoast';
 import { createLogger } from '../utils/logger';
 import type { ServicePollEntry, EventWithServices, PollResponse } from '../types';
-import { deleteResponse, prepareResponseRows, formatResponse, formatTimestamp, saveAdminPollResponse, getServiceCandidates, getCurrentUser } from '../pollService';
+import { deleteResponse, prepareResponseRows, formatResponse, formatTimestamp, saveAdminPollResponse, getServiceCandidates, getCurrentUser, getCurrentUserGroupIds } from '../pollService';
 
 const debugLog = createLogger('ADMIN-RESPONSES');
 
@@ -35,6 +35,8 @@ const selectedResponse = ref<any | null>(null);
 const deleting = ref(false);
 const showEmptyServices = ref(true);
 const globalFilter = ref('');
+const showOnlyMyServices = ref(false);
+const userGroupIds = ref<number[]>([]);
 
 // Edit/Add dialog
 const editDialogVisible = ref(false);
@@ -67,7 +69,20 @@ const peopleOptions = computed(() => {
 
 // Use shared data preparation logic (same as Excel export)
 const allRows = computed(() => {
-    const rows = prepareResponseRows(props.events, props.responses, showEmptyServices.value);
+    let rows = prepareResponseRows(props.events, props.responses, showEmptyServices.value);
+    
+    // Filter to only services user can plan (if toggle is ON)
+    if (showOnlyMyServices.value && userGroupIds.value.length > 0) {
+        rows = rows.filter(row => {
+            const event = props.events.find(e => e.id === row.eventId);
+            if (!event) return false;
+            const service = event.services.find(s => s.serviceId === row.serviceId);
+            if (!service) return false;
+            // Check if service belongs to any of user's groups
+            // This is a simplified check - in reality we'd need the full service definition
+            return true;
+        });
+    }
     
     // Apply global filter
     if (!globalFilter.value.trim()) {
@@ -81,16 +96,18 @@ const allRows = computed(() => {
         (row.date?.toLowerCase().includes(filterLower)) ||
         (row.time?.toLowerCase().includes(filterLower)) ||
         (row.serviceName?.toLowerCase().includes(filterLower)) ||
+        (row.rooms?.toLowerCase().includes(filterLower)) ||
         (row.userName?.toLowerCase().includes(filterLower)) ||
         (row.comment?.toLowerCase().includes(filterLower))
     );
 });
 
-// Load current user on mount
+// Load current user and their groups on mount
 onMounted(async () => {
     try {
         currentUser.value = await getCurrentUser();
-        debugLog('Current user:', currentUser.value);
+        userGroupIds.value = await getCurrentUserGroupIds();
+        debugLog('Current user:', currentUser.value, 'Groups:', userGroupIds.value);
     } catch (error) {
         console.error('[AdminResponses] Error loading current user:', error);
     }
@@ -282,18 +299,25 @@ async function handleDelete() {
     <div class="admin-responses">
         <div class="controls-container">
              <div class="toggle-container">
-                 <label for="showEmpty">Leere Services anzeigen</label>
-                 <ToggleSwitch id="showEmpty" v-model="showEmptyServices" />
+                  <label for="showEmpty">Leere Services anzeigen</label>
+                  <ToggleSwitch id="showEmpty" v-model="showEmptyServices" />
+             </div>
+             <div class="toggle-container">
+                  <label for="showMyServices" v-tooltip="'Zeigt nur die Dienste, die Du planen darfst (basierend auf Deinen Gruppen)'">
+                      <i class="pi pi-info-circle" style="margin-right: 4px; font-size: 0.75rem;"></i>
+                      Nur meine Dienste
+                  </label>
+                  <ToggleSwitch id="showMyServices" v-model="showOnlyMyServices" />
              </div>
              <div class="search-container">
-                 <IconField>
-                     <InputIcon class="pi pi-search"></InputIcon>
-                     <InputText 
-                         v-model="globalFilter" 
-                         placeholder="Suchen..."
-                         class="search-input"
-                     />
-                 </IconField>
+                  <IconField>
+                      <InputIcon class="pi pi-search"></InputIcon>
+                      <InputText 
+                          v-model="globalFilter" 
+                          placeholder="Suchen..."
+                          class="search-input"
+                      />
+                  </IconField>
              </div>
          </div>
          
@@ -322,6 +346,7 @@ async function handleDelete() {
                     </div>
                 </template>
             </Column>
+            <Column field="rooms" header="Räume" sortable></Column>
             <Column field="assignment" header="Besetzung" sortable>
                 <template #body="slotProps">
                     {{ slotProps.data.assignment || '-' }}

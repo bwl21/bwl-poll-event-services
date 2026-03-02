@@ -48,6 +48,27 @@ export async function getCurrentUser(): Promise<UserInfo> {
 }
 
 /**
+ * Get group IDs for current user (for filtering services they can plan)
+ */
+export async function getCurrentUserGroupIds(): Promise<number[]> {
+    const user = await getCurrentUser();
+    const userGroups = await churchtoolsClient.get<any[]>(
+        `/persons/${user.id}/groups`
+    );
+    
+    const userGroupIds = userGroups.map((g: any) => {
+        const groupId = g.group?.domainIdentifier
+            ?? g.group?.id
+            ?? g.groupId
+            ?? g.id;
+        return groupId ? parseInt(String(groupId), 10) : null;
+    }).filter((id): id is number => id !== null && !isNaN(id));
+    
+    debugLog('User group IDs:', userGroupIds);
+    return userGroupIds;
+}
+
+/**
  * Parse URL parameters for poll configuration
  */
 export function getPollConfig(): PollConfig {
@@ -68,7 +89,8 @@ export function getPollConfig(): PollConfig {
  */
 export async function fetchEventsWithServices(
     startDate: string,
-    days: number
+    days: number,
+    isAdmin: boolean = false
 ): Promise<FetchEventsResult> {
     const start = new Date(startDate);
     const end = new Date(start);
@@ -179,6 +201,11 @@ export async function fetchEventsWithServices(
                         if (!isEnabled) {
                             debugLog('Service', eventService.serviceId, 'is disabled, filtering out');
                             return false;
+                        }
+
+                        // Admins see all services
+                        if (isAdmin) {
+                            return true;
                         }
 
                         // Check if this service can be filled by user's groups
@@ -721,56 +748,63 @@ export function prepareResponseRows(
             debugLog('Event', event.id, 'Service', service.serviceId, service.name, '- responses:', serviceResponses.length);
             
             // Format assignment info
-            let assignmentText = '';
-            if ((service as any).assignments && (service as any).assignments.length > 0) {
-                const assignment = (service as any).assignments[0];
-                assignmentText = assignment.isConfirmed 
-                    ? assignment.personName 
-                    : `${assignment.personName} (angefordert)`;
-            }
+             let assignmentText = '';
+             if ((service as any).assignments && (service as any).assignments.length > 0) {
+                 const assignment = (service as any).assignments[0];
+                 assignmentText = assignment.isConfirmed 
+                     ? assignment.personName 
+                     : `${assignment.personName} (angefordert)`;
+             }
 
-            if (serviceResponses.length === 0) {
-                if (includeEmpty) {
-                    // Add row even if no responses (for Excel export)
-                    rows.push({
-                        eventName: event.name,
-                        weekday: formatWeekday(event.startDate),
-                        date: formatDateOnly(event.startDate),
-                        time: formatTime(event.startDate),
-                        serviceName: service.name,
-                        serviceCategoryName: (service as any).categoryName,
-                        assignment: assignmentText,
-                        userName: '-',
-                        response: null,
-                        comment: '',
-                        timestamp: '',
-                        editedBy: undefined,
-                        editedAt: undefined,
-                        eventId: event.id,
-                        serviceId: service.serviceId,
-                        userId: 0,
-                    });
-                }
-            } else {
-                for (const response of serviceResponses) {
-                    rows.push({
-                        eventName: event.name,
-                        weekday: formatWeekday(event.startDate),
-                        date: formatDateOnly(event.startDate),
-                        time: formatTime(event.startDate),
-                        serviceName: service.name,
-                        serviceCategoryName: (service as any).categoryName,
-                        assignment: assignmentText,
-                        userName: response.userName || `User ${response.userId}`,
-                        response: response.response,
-                        comment: response.comment || '',
-                        timestamp: response.timestamp,
-                        editedBy: response.editedBy,
-                        editedAt: response.editedAt,
-                        eventId: response.eventId,
-                        serviceId: response.serviceId,
-                        userId: response.userId,
-                    });
+             // Extract room names from event resources
+             const roomsText = event.resources && event.resources.length > 0
+                 ? event.resources.map((r: any) => r.name).join(', ')
+                 : '-';
+
+             if (serviceResponses.length === 0) {
+                 if (includeEmpty) {
+                     // Add row even if no responses (for Excel export)
+                     rows.push({
+                         eventName: event.name,
+                         weekday: formatWeekday(event.startDate),
+                         date: formatDateOnly(event.startDate),
+                         time: formatTime(event.startDate),
+                         serviceName: service.name,
+                         serviceCategoryName: (service as any).categoryName,
+                         assignment: assignmentText,
+                         rooms: roomsText,
+                         userName: '-',
+                         response: null,
+                         comment: '',
+                         timestamp: '',
+                         editedBy: undefined,
+                         editedAt: undefined,
+                         eventId: event.id,
+                         serviceId: service.serviceId,
+                         userId: 0,
+                     });
+                 }
+             } else {
+                 for (const response of serviceResponses) {
+                     rows.push({
+                         eventName: event.name,
+                         weekday: formatWeekday(event.startDate),
+                         date: formatDateOnly(event.startDate),
+                         time: formatTime(event.startDate),
+                         serviceName: service.name,
+                         serviceCategoryName: (service as any).categoryName,
+                         assignment: assignmentText,
+                         rooms: roomsText,
+                         userName: response.userName || `User ${response.userId}`,
+                         response: response.response,
+                         comment: response.comment || '',
+                         timestamp: response.timestamp,
+                         editedBy: response.editedBy,
+                         editedAt: response.editedAt,
+                         eventId: response.eventId,
+                         serviceId: response.serviceId,
+                         userId: response.userId,
+                     });
                 }
             }
         }
