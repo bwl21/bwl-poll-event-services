@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import TabView from 'primevue/tabview';
 import TabPanel from 'primevue/tabpanel';
 import Button from 'primevue/button';
@@ -8,6 +8,8 @@ import AdminConfig from './AdminConfig.vue';
 import { exportToExcel } from '../exportService';
 import { createLogger } from '../utils/logger';
 import type { ServicePollEntry, EventWithServices } from '../types';
+import { fetchEventsWithServices, getPollConfig, getServiceMasterData } from '../pollService';
+import { getLocalDateString } from '../utils/date';
 
 const debugLog = createLogger('ADMIN-PANEL');
 
@@ -23,6 +25,28 @@ const emit = defineEmits<{
 }>();
 
 const activeTab = ref(0);
+const adminEvents = ref<EventWithServices[]>([]);
+const serviceMasterData = ref<any>(null);
+const loadingAdminEvents = ref(true);
+
+// Load all events for admin planning (unfiltered by groups)
+onMounted(async () => {
+    try {
+        const config = getPollConfig();
+        const startStr = getLocalDateString(new Date(config.startDate));
+        const [eventsResult, masterData] = await Promise.all([
+            fetchEventsWithServices(startStr, config.days, true),
+            getServiceMasterData(),
+        ]);
+        adminEvents.value = eventsResult.events;
+        serviceMasterData.value = masterData;
+        debugLog('Loaded', adminEvents.value.length, 'admin events');
+    } catch (error) {
+        console.error('[AdminPanel] Error loading admin events:', error);
+    } finally {
+        loadingAdminEvents.value = false;
+    }
+});
 
 function handleResponseDeleted(entry: ServicePollEntry) {
     debugLog('Response deleted:', entry);
@@ -36,7 +60,7 @@ function handleResponseSaved(entry: ServicePollEntry) {
 
 function handleExportAll() {
     debugLog('Exporting all responses');
-    exportToExcel(props.events, props.responses);
+    exportToExcel(loadingAdminEvents.value ? props.events : adminEvents.value, props.responses);
 }
 </script>
 
@@ -59,7 +83,8 @@ function handleExportAll() {
                 </template>
                 <AdminResponses
                     :responses="responses"
-                    :events="events"
+                    :events="loadingAdminEvents ? events : adminEvents"
+                    :service-master-data="serviceMasterData"
                     @response-deleted="handleResponseDeleted"
                     @response-saved="handleResponseSaved"
                 />
@@ -72,7 +97,7 @@ function handleExportAll() {
                         <span>Service Config</span>
                     </div>
                 </template>
-                <AdminConfig :events="events" @config-changed="() => emit('config-changed')" />
+                <AdminConfig :events="loadingAdminEvents ? events : adminEvents" @config-changed="() => emit('config-changed')" />
             </TabPanel>
 
             <TabPanel>

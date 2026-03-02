@@ -460,6 +460,26 @@ export function getResponsesForService(
  */
 
 let cachedIsAdmin: boolean | null = null;
+let cachedServiceMasterData: any = null;
+
+/**
+ * Get service master data (all services with their group assignments)
+ */
+export async function getServiceMasterData(): Promise<any> {
+    if (cachedServiceMasterData) return cachedServiceMasterData;
+    
+    try {
+        const masterData = await churchtoolsClient.get<any>('/event/masterdata');
+        cachedServiceMasterData = {
+            services: masterData.services || [],
+            serviceGroups: masterData.serviceGroups || [],
+        };
+        return cachedServiceMasterData;
+    } catch (error) {
+        debugLog('Error fetching service master data:', error);
+        return { services: [], serviceGroups: [] };
+    }
+}
 
 /**
  * Check if current user has "Poll Admin" permission

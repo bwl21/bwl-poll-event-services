@@ -144,7 +144,9 @@ async function loadData() {
 
         const startStr = getLocalDateString(startDate.value);
         const [eventsResult, responsesData] = await Promise.all([
-            fetchEventsWithServices(startStr, days.value, adminStatus),
+            // Always load with normal filtering for survey page (admins see only their services)
+            // Admin panel will have toggle to filter further
+            fetchEventsWithServices(startStr, days.value, false),
             loadAllPollResponses(),
         ]);
 
@@ -412,7 +414,7 @@ onMounted(loadData);
 
 <style scoped>
 .poll-app {
-    max-width: 1200px;
+    max-width: 1600px;
     margin: 0 auto;
     padding: 20px;
     width: 100%;

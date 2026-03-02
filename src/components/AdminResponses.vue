@@ -15,12 +15,14 @@ import { useToast } from 'primevue/usetoast';
 import { createLogger } from '../utils/logger';
 import type { ServicePollEntry, EventWithServices, PollResponse } from '../types';
 import { deleteResponse, prepareResponseRows, formatResponse, formatTimestamp, saveAdminPollResponse, getServiceCandidates, getCurrentUser, getCurrentUserGroupIds } from '../pollService';
+import MultiSelect from 'primevue/multiselect';
 
 const debugLog = createLogger('ADMIN-RESPONSES');
 
 const props = defineProps<{
     responses: ServicePollEntry[];
     events: EventWithServices[];
+    serviceMasterData?: any;
 }>();
 
 const emit = defineEmits<{
@@ -37,6 +39,7 @@ const showEmptyServices = ref(true);
 const globalFilter = ref('');
 const showOnlyMyServices = ref(false);
 const userGroupIds = ref<number[]>([]);
+const filterCategories = ref<string[]>([]);
 
 // Edit/Add dialog
 const editDialogVisible = ref(false);
@@ -67,21 +70,65 @@ const peopleOptions = computed(() => {
     return options;
 });
 
+// Available categories for filter dropdown
+const availableCategories = computed(() => {
+    const categories = new Set<string>();
+    for (const event of props.events) {
+        for (const service of event.services) {
+            if ((service as any).categoryName) {
+                categories.add((service as any).categoryName);
+            }
+        }
+    }
+    return Array.from(categories).sort();
+});
+
 // Use shared data preparation logic (same as Excel export)
 const allRows = computed(() => {
     let rows = prepareResponseRows(props.events, props.responses, showEmptyServices.value);
     
     // Filter to only services user can plan (if toggle is ON)
-    if (showOnlyMyServices.value && userGroupIds.value.length > 0) {
+    if (showOnlyMyServices.value && userGroupIds.value.length > 0 && props.serviceMasterData?.services) {
+        debugLog('=== SERVICE FILTER START ===');
+        debugLog('User groups:', userGroupIds.value);
+        debugLog('Master data services count:', props.serviceMasterData.services.length);
+        debugLog('Sample service from master data:', props.serviceMasterData.services[0]);
+        debugLog('Rows before filter:', rows.length);
+        
         rows = rows.filter(row => {
-            const event = props.events.find(e => e.id === row.eventId);
-            if (!event) return false;
-            const service = event.services.find(s => s.serviceId === row.serviceId);
-            if (!service) return false;
-            // Check if service belongs to any of user's groups
-            // This is a simplified check - in reality we'd need the full service definition
-            return true;
+            // Find the service definition in master data
+            const serviceDef = props.serviceMasterData.services.find((s: any) => s.id === row.serviceId);
+            
+            if (!serviceDef) {
+                debugLog('❌ Service NOT found. Looking for ID:', row.serviceId, 'in master data IDs:', props.serviceMasterData.services.map((s: any) => s.id));
+                return false;
+            }
+            
+            debugLog(`✓ Service found: "${row.serviceName}" (ID: ${row.serviceId})`);
+            debugLog('  groupIds:', serviceDef.groupIds, 'onlyAssignFromGroups:', serviceDef.onlyAssignFromGroups);
+            
+            // Check if service's groupIds overlap with user's groupIds
+            const serviceGroupIds = serviceDef.groupIds || [];
+            if (serviceGroupIds.length === 0 && !serviceDef.onlyAssignFromGroups) {
+                // Service has no group restriction
+                debugLog('  → NO group restriction, INCLUDE');
+                return true;
+            }
+            
+            // Service has group restriction - check if user is in one of the groups
+            const userCanPlan = serviceGroupIds.some((gid: number) => userGroupIds.value.includes(gid));
+            debugLog(`  → Groups match? ${userCanPlan ? '✓ YES' : '❌ NO'}`);
+            return userCanPlan;
         });
+        debugLog('Rows after filter:', rows.length);
+        debugLog('=== SERVICE FILTER END ===');
+    } else {
+        debugLog('Filter skipped. showOnlyMyServices:', showOnlyMyServices.value, 'userGroupIds:', userGroupIds.value, 'hasServiceMasterData:', !!props.serviceMasterData?.services);
+    }
+    
+    // Filter by service categories (if selected)
+    if (filterCategories.value.length > 0) {
+        rows = rows.filter(row => filterCategories.value.includes(row.serviceCategoryName || ''));
     }
     
     // Apply global filter
@@ -309,6 +356,20 @@ async function handleDelete() {
                   </label>
                   <ToggleSwitch id="showMyServices" v-model="showOnlyMyServices" />
              </div>
+             <div class="filter-group">
+                  <label for="categoryFilter">Dienstkategorie</label>
+                  <MultiSelect 
+                      id="categoryFilter"
+                      v-model="filterCategories"
+                      :options="availableCategories"
+                      placeholder="Kategorien"
+                      :show-toggle-all="true"
+                      :max-selected-labels="1"
+                      display="chip"
+                      filter
+                      filter-placeholder="Kategorien suchen..."
+                  />
+             </div>
              <div class="search-container">
                   <IconField>
                       <InputIcon class="pi pi-search"></InputIcon>
@@ -529,6 +590,54 @@ async function handleDelete() {
     font-size: 0.875rem;
     color: #666;
     margin: 0;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 250px;
+}
+
+.filter-group label {
+    font-size: 0.875rem;
+    color: #666;
+    margin: 0;
+    font-weight: 500;
+}
+
+.filter-group :deep(.p-multiselect) {
+    width: 100%;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.85rem !important;
+    padding: 6px 8px !important;
+    height: 38px;
+}
+
+.filter-group :deep(.p-multiselect .p-multiselect-label) {
+    padding: 0;
+    line-height: 1.2;
+    max-height: 22px;
+    overflow: hidden;
+}
+
+.filter-group :deep(.p-multiselect:not(.p-disabled):hover) {
+    border-color: #80bdff;
+}
+
+.filter-group :deep(.p-multiselect-trigger) {
+    width: auto;
+    padding: 0;
+    margin-left: 4px;
+}
+
+.filter-group :deep(.p-chip) {
+    background-color: #e8f5e9;
+    color: #388e3c;
+    font-size: 0.65rem;
+    padding: 2px 5px;
+    margin: 1px;
 }
 
 .search-container {
