@@ -8,14 +8,13 @@ import ToggleSwitch from 'primevue/toggleswitch';
 import Tag from 'primevue/tag';
 import Dropdown from 'primevue/dropdown';
 import InputText from 'primevue/inputtext';
-import IconField from 'primevue/iconfield';
-import InputIcon from 'primevue/inputicon';
 import Textarea from 'primevue/textarea';
 import { useToast } from 'primevue/usetoast';
 import { createLogger } from '../utils/logger';
 import type { ServicePollEntry, EventWithServices, PollResponse } from '../types';
 import { deleteResponse, prepareResponseRows, formatResponse, formatTimestamp, saveAdminPollResponse, getServiceCandidates, getCurrentUser, getCurrentUserGroupIds } from '../pollService';
 import MultiSelect from 'primevue/multiselect';
+import InputNumber from 'primevue/inputnumber';
 
 const debugLog = createLogger('ADMIN-RESPONSES');
 
@@ -40,6 +39,17 @@ const globalFilter = ref('');
 const showOnlyMyServices = ref(false);
 const userGroupIds = ref<number[]>([]);
 const filterCategories = ref<string[]>([]);
+const filterRooms = ref<string[]>([]);
+const resultCount = computed(() => allRows.value.length);
+const activeFiltersCount = computed(() => {
+  let count = 0;
+  if (globalFilter.value.trim().length > 0) count++;
+  if (filterCategories.value.length > 0) count++;
+  if (filterRooms.value.length > 0) count++;
+  if (showEmptyServices.value === false) count++;
+  if (showOnlyMyServices.value === true) count++;
+  return count;
+});
 
 // Edit/Add dialog
 const editDialogVisible = ref(false);
@@ -81,6 +91,19 @@ const availableCategories = computed(() => {
         }
     }
     return Array.from(categories).sort();
+});
+
+// Available rooms for filter dropdown
+const availableRooms = computed(() => {
+    const rooms = new Set<string>();
+    for (const event of props.events) {
+        if (event.resources && Array.isArray(event.resources)) {
+            for (const resource of event.resources) {
+                if (resource.name) rooms.add(resource.name);
+            }
+        }
+    }
+    return Array.from(rooms).sort();
 });
 
 // Use shared data preparation logic (same as Excel export)
@@ -129,6 +152,15 @@ const allRows = computed(() => {
     // Filter by service categories (if selected)
     if (filterCategories.value.length > 0) {
         rows = rows.filter(row => filterCategories.value.includes(row.serviceCategoryName || ''));
+    }
+    
+    // Filter by rooms (if selected)
+    if (filterRooms.value.length > 0) {
+        rows = rows.filter(row => {
+            if (!row.rooms) return false;
+            // Check if any of the selected rooms is in the row's rooms
+            return filterRooms.value.some(room => row.rooms?.includes(room));
+        });
     }
     
     // Apply global filter
@@ -245,8 +277,16 @@ async function openEditDialog(row: any) {
     editDialogVisible.value = true;
 }
 
+function resetFilters() {
+    globalFilter.value = '';
+    filterCategories.value = [];
+    filterRooms.value = [];
+    showEmptyServices.value = true;
+    showOnlyMyServices.value = false;
+}
+
 async function saveEditingResponse() {
-    debugLog('editingResponse.value:', editingResponse.value);
+     debugLog('editingResponse.value:', editingResponse.value);
     
     if (!editingResponse.value?.eventId || !editingResponse.value?.serviceId || !editingResponse.value?.userId) {
         debugLog('Missing required fields');
@@ -344,43 +384,101 @@ async function handleDelete() {
 
 <template>
     <div class="admin-responses">
-        <div class="controls-container">
-             <div class="toggle-container">
-                  <label for="showEmpty">Leere Services anzeigen</label>
-                  <ToggleSwitch id="showEmpty" v-model="showEmptyServices" />
-             </div>
-             <div class="toggle-container">
-                  <label for="showMyServices" v-tooltip="'Zeigt nur die Dienste, die Du planen darfst (basierend auf Deinen Gruppen)'">
-                      <i class="pi pi-info-circle" style="margin-right: 4px; font-size: 0.75rem;"></i>
-                      Nur meine Dienste
-                  </label>
-                  <ToggleSwitch id="showMyServices" v-model="showOnlyMyServices" />
-             </div>
-             <div class="filter-group">
-                  <label for="categoryFilter">Dienstkategorie</label>
-                  <MultiSelect 
-                      id="categoryFilter"
-                      v-model="filterCategories"
-                      :options="availableCategories"
-                      placeholder="Kategorien"
-                      :show-toggle-all="true"
-                      :max-selected-labels="1"
-                      display="chip"
-                      filter
-                      filter-placeholder="Kategorien suchen..."
-                  />
-             </div>
-             <div class="search-container">
-                  <IconField>
-                      <InputIcon class="pi pi-search"></InputIcon>
-                      <InputText 
-                          v-model="globalFilter" 
-                          placeholder="Suchen..."
-                          class="search-input"
-                      />
-                  </IconField>
-             </div>
-         </div>
+        <!-- Filter Bar (Row 1: Controls) -->
+        <div class="filter-bar-admin">
+            <div class="filter-row">
+                <!-- Empty Services Toggle -->
+                <div class="control-item toggle-item" v-tooltip="'Dienste ohne Antworten anzeigen'">
+                    <label for="showEmpty" class="control-label">Leer</label>
+                    <ToggleSwitch id="showEmpty" v-model="showEmptyServices" />
+                </div>
+                
+                <!-- My Services Toggle -->
+                <div class="control-item toggle-item" v-tooltip="'Nur Dienste die ich planen kann'">
+                    <label for="showMyServices" class="control-label">Meine</label>
+                    <ToggleSwitch id="showMyServices" v-model="showOnlyMyServices" />
+                </div>
+
+                <!-- Category Filter -->
+                <div class="filter-item-wrapper" v-tooltip="filterCategories.length > 0 ? `Kategorien: ${filterCategories.join(', ')}` : 'Nach Kategorie filtern'">
+                    <label class="filter-label-small">Kategorien</label>
+                    <MultiSelect 
+                        v-model="filterCategories"
+                        :options="availableCategories"
+                        placeholder="Alle"
+                        :show-toggle-all="true"
+                        :max-selected-labels="1"
+                        display="chip"
+                        filter
+                        filter-placeholder="Kategorien suchen..."
+                        class="flex-item"
+                    />
+                </div>
+
+                <!-- Room Filter -->
+                <div class="filter-item-wrapper" v-tooltip="filterRooms.length > 0 ? `Räume: ${filterRooms.join(', ')}` : 'Nach Raum filtern'">
+                    <label class="filter-label-small">Räume</label>
+                    <MultiSelect 
+                        v-model="filterRooms"
+                        :options="availableRooms"
+                        placeholder="Alle"
+                        :show-toggle-all="true"
+                        :max-selected-labels="1"
+                        display="chip"
+                        filter
+                        filter-placeholder="Räume suchen..."
+                        class="flex-item"
+                    />
+                </div>
+                
+                <!-- Search -->
+                <div class="filter-item-wrapper search-wrapper" v-tooltip="'Nach Event, Dienst, Person suchen'">
+                    <label class="filter-label-small">Suche</label>
+                    <InputText 
+                        v-model="globalFilter" 
+                        placeholder="Event, Dienst, Person..."
+                        class="flex-item search-input"
+                    />
+                </div>
+            </div>
+
+            <!-- Filter Bar (Row 2: Summary) -->
+            <div class="filter-row row-summary">
+                <div class="summary-left">
+                    <Button
+                        icon="pi pi-copy"
+                        label="Kopieren"
+                        severity="info"
+                        text
+                        size="small"
+                        @click="() => navigator.clipboard.writeText(window.location.href)"
+                        class="copy-btn"
+                        v-tooltip="'Aktuelle URL kopieren'"
+                    />
+                </div>
+                <div class="summary-center">
+                    <span v-if="activeFiltersCount > 0" class="badge" v-tooltip="'Aktive Filter'">
+                        {{ activeFiltersCount }} Filter
+                    </span>
+                    <span class="results-count" v-tooltip="'Anzahl der angezeigten Zeilen'">
+                        {{ resultCount }} Zeile{{ resultCount !== 1 ? 'n' : '' }}
+                    </span>
+                </div>
+                <div class="summary-right">
+                    <Button
+                        v-if="activeFiltersCount > 0"
+                        icon="pi pi-times"
+                        label="Reset"
+                        text
+                        severity="secondary"
+                        @click="resetFilters"
+                        size="small"
+                        class="reset-btn"
+                        v-tooltip="'Alle Filter löschen'"
+                    />
+                </div>
+            </div>
+        </div>
          
          <DataTable 
              :value="allRows" 
@@ -570,69 +668,195 @@ async function handleDelete() {
     width: 100%;
 }
 
-.controls-container {
+/* Filter Bar Container */
+.filter-bar-admin {
+    margin-bottom: 20px;
+}
+
+.filter-row {
     display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 16px;
+    gap: 8px;
+    align-items: flex-end;
     padding: 12px;
     background: #f8f9fa;
-    border-radius: 4px;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    flex-wrap: nowrap;
+    overflow-x: auto;
 }
 
-.toggle-container {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.toggle-container label {
-    font-size: 0.875rem;
-    color: #666;
-    margin: 0;
-}
-
-.filter-group {
+/* Control Items (Toggles) */
+.control-item {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    min-width: 250px;
+    gap: 2px;
+    min-width: auto;
+    flex-shrink: 0;
+    align-items: flex-start;
+    height: 52px;
+    justify-content: space-between;
 }
 
-.filter-group label {
-    font-size: 0.875rem;
+.control-label {
+    font-size: 0.7rem;
     color: #666;
-    margin: 0;
-    font-weight: 500;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    height: 12px;
+    display: flex;
+    align-items: center;
+    padding: 0;
 }
 
-.filter-group :deep(.p-multiselect) {
+.toggle-item :deep(.p-toggleswitch) {
+    margin: auto 0;
+}
+
+/* Filter Item Wrappers */
+.filter-item-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 140px;
+}
+
+.search-wrapper {
+    flex-grow: 2;
+    min-width: 200px;
+}
+
+.filter-label-small {
+    font-size: 0.7rem;
+    color: #666;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 0 2px;
+    height: 12px;
+    display: flex;
+    align-items: center;
+}
+
+/* Filter Components */
+.flex-item {
+    flex-grow: 1;
     width: 100%;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    font-size: 0.85rem !important;
+}
+
+.search-input {
+    width: 100%;
+}
+
+/* Summary Row */
+.row-summary {
+    gap: 0;
+    padding: 8px 12px;
+    border-top: 1px solid #e9ecef;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.summary-left {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.summary-center {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-grow: 1;
+    margin-left: 16px;
+}
+
+.summary-right {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.badge {
+    font-size: 0.7rem;
+    background-color: #e3f2fd;
+    color: #1976d2;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.results-count {
+    font-size: 0.8rem;
+    color: #666;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.copy-btn,
+.reset-btn {
+    flex-shrink: 0;
+}
+
+/* PrimeVue component sizing */
+:deep(.p-multiselect) {
+    width: 100% !important;
     padding: 6px 8px !important;
-    height: 38px;
+    font-size: 0.85rem !important;
+    height: 38px !important;
+    border: 1px solid #ced4da !important;
+    border-radius: 4px !important;
 }
 
-.filter-group :deep(.p-multiselect .p-multiselect-label) {
-    padding: 0;
-    line-height: 1.2;
-    max-height: 22px;
-    overflow: hidden;
+:deep(.p-multiselect .p-multiselect-label) {
+    padding: 0 !important;
+    line-height: 1.2 !important;
+    max-height: 22px !important;
+    overflow: hidden !important;
 }
 
-.filter-group :deep(.p-multiselect:not(.p-disabled):hover) {
-    border-color: #80bdff;
+:deep(.p-multiselect:not(.p-disabled):hover) {
+    border-color: #80bdff !important;
 }
 
-.filter-group :deep(.p-multiselect-trigger) {
-    width: auto;
-    padding: 0;
-    margin-left: 4px;
+:deep(.p-multiselect-trigger) {
+    width: auto !important;
+    padding: 0 !important;
+    margin-left: 4px !important;
 }
 
-.filter-group :deep(.p-chip) {
+:deep(.p-multiselect .p-placeholder) {
+    font-size: 0.85rem !important;
+    padding: 0 !important;
+}
+
+:deep(.p-inputtext) {
+    padding: 8px 10px !important;
+    font-size: 0.85rem !important;
+    height: 38px !important;
+}
+
+:deep(.p-toggleswitch) {
+    height: 24px !important;
+    width: 45px !important;
+}
+
+:deep(.p-toggleswitch .p-toggleswitch-slider) {
+    height: 24px !important;
+}
+
+:deep(.p-button-sm) {
+    padding: 6px 8px !important;
+    font-size: 0.8rem !important;
+    height: 36px !important;
+}
+
+:deep(.p-chip) {
     background-color: #e8f5e9;
     color: #388e3c;
     font-size: 0.65rem;
@@ -640,14 +864,55 @@ async function handleDelete() {
     margin: 1px;
 }
 
-.search-container {
-    margin-left: auto;
-    flex: 1;
-    max-width: 300px;
+/* Mobile */
+@media (max-width: 1024px) {
+    .filter-row {
+        gap: 6px;
+        padding: 10px;
+    }
+
+    .flex-item {
+        min-width: 120px;
+    }
+
+    .search-item {
+        min-width: 200px;
+        flex-grow: 1;
+    }
 }
 
-.search-input {
-    width: 100%;
+@media (max-width: 768px) {
+    .filter-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        overflow-x: visible;
+    }
+
+    .control-item,
+    .filter-item-wrapper {
+        min-width: unset;
+        width: 100%;
+    }
+
+    .copy-btn {
+        align-self: flex-start;
+    }
+
+    .flex-item {
+        min-width: unset;
+        flex-grow: 0;
+        width: 100%;
+    }
+
+    .search-input {
+        width: 100%;
+    }
+
+    :deep(.p-multiselect),
+    :deep(.p-inputtext) {
+        height: 36px !important;
+    }
 }
 
 .edit-form {
