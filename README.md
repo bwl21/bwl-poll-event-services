@@ -2,7 +2,10 @@
 
 Eine ChurchTools-Erweiterung, die Mitarbeitern ermöglicht, ihre Verfügbarkeit für Dienste in anstehenden Events anzugeben. Planer können alle Antworten einsehen und beliebig exportieren.
 
-**🔗 Benutzerhandbuch**: Siehe [docs/USERMANUAL.md](docs/USERMANUAL.md) für Administrator, Mitarbeiter und Planer Dokumentation.
+**📚 Dokumentation**: 
+- Benutzerhandbuch: [docs/USERMANUAL.md](docs/USERMANUAL.md)
+- **Dokumentations-Index**: [docs/INDEX.md](docs/INDEX.md) ⭐ START HERE für Entwickler
+- Filter-Implementierung: [docs/FILTER-IMPLEMENTATION.md](docs/FILTER-IMPLEMENTATION.md)
 
 ---
 
