@@ -110,25 +110,24 @@ function getServiceTooltip(): string {
   if (props.modelValue.services.length === 0) {
     return 'Nach Diensten filtern';
   }
-  const selected = props.availableServices
+  return props.availableServices
     .filter(([id]) => props.modelValue.services.includes(id))
     .map(([, name]) => name)
     .join(', ');
-  return `Dienste: ${selected}`;
 }
 
 function getCategoryTooltip(): string {
   if (props.modelValue.categories.length === 0) {
     return 'Nach Dienstkategorien filtern';
   }
-  return `Kategorien: ${props.modelValue.categories.join(', ')}`;
+  return props.modelValue.categories.join(', ');
 }
 
 function getRoomTooltip(): string {
   if (props.modelValue.rooms.length === 0) {
     return 'Nach Räumen filtern';
   }
-  return `Räume: ${props.modelValue.rooms.join(', ')}`;
+  return props.modelValue.rooms.join(', ');
 }
 
 const serviceTooltip = computed(() => getServiceTooltip());
