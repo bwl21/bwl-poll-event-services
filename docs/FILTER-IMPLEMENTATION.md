@@ -2,10 +2,11 @@
 
 ## 📋 Übersicht
 
-Implementierung von drei Filtertypen für die Umfragenseite:
+Implementierung von vier Filtertypen für die Umfragenseite:
 1. **Dienste-Filter** (Mehrfachauswahl/Dropdown)
-2. **Räume-Filter** (Mehrfachauswahl/Dropdown)
-3. **Event-Filter** (Textsuche)
+2. **Kategorien-Filter** (Mehrfachauswahl/Dropdown)
+3. **Räume-Filter** (Mehrfachauswahl/Dropdown)
+4. **Event-Filter** (Textsuche)
 
 ---
 
@@ -58,6 +59,7 @@ EventWithServices {
 
 ### Filter-Quellen extrahieren
 - **Dienste**: Aus `allEvents.flatMap(e => e.services)` → dedupliziert nach `serviceId` + `name`
+- **Kategorien**: Aus `allEvents.flatMap(e => e.services)` → dedupliziert nach `categoryName` (Service-Gruppennamen)
 - **Räume**: Aus `allEvents.flatMap(e => e.resources)` → dedupliziert nach `name`
 - **Events**: Durchsucht in `event.name` + `event.startDate` (Datumsformatierung)
 
@@ -69,11 +71,13 @@ EventWithServices {
 
 ```
 App.vue
-├── FilterBar.vue (NEU)
-│   ├── ServiceFilter.vue (NEU)
-│   ├── RoomFilter.vue (NEU)
-│   └── EventSearch.vue (NEU)
-├── EventCard.vue (UNVERÄNDERT)
+├── FilterBar.vue
+│   ├── ServiceFilter.vue
+│   ├── CategoryFilter.vue
+│   ├── RoomFilter.vue
+│   └── EventSearch.vue
+├── EventCard.vue
+│   └── Filter wird auch auf Service-Level angewendet
 ```
 
 ### State-Management
@@ -81,7 +85,8 @@ App.vue
 In `App.vue`:
 ```typescript
 // Filter-State
-const filterServices = ref<number[]>([]); // IDs oder service-Indizes
+const filterServices = ref<number[]>([]);
+const filterCategories = ref<string[]>([]);
 const filterRooms = ref<string[]>([]);
 const filterEventText = ref<string>('');
 
@@ -99,13 +104,23 @@ const filteredEvents = computed(() => {
     // 2. Dienste-Filter (wenn ausgewählt)
     if (filterServices.value.length > 0) {
       const hasService = event.services.some(s =>
-        filterServices.value.includes(s.serviceId) ||
-        filterServices.value.includes(s.id)
+        filterServices.value.includes(s.serviceId)
       );
       if (!hasService) return false;
     }
 
-    // 3. Räume-Filter (wenn ausgewählt)
+    // 3. Kategorien-Filter (wenn ausgewählt)
+    // ⚠️ WICHTIG: Filtert nur EVENTS, die mindestens eine Service mit der Kategorie haben!
+    // Die einzelnen Services werden dann in EventCard.vue gefiltert
+    if (filterCategories.value.length > 0) {
+      const hasCategory = event.services.some((s) => {
+        const categoryName = (s as any).categoryName;
+        return categoryName && filterCategories.value.includes(categoryName);
+      });
+      if (!hasCategory) return false;
+    }
+
+    // 4. Räume-Filter (wenn ausgewählt)
     if (filterRooms.value.length > 0) {
       const hasRoom = event.resources?.some(r =>
         filterRooms.value.includes(r.name)
@@ -126,6 +141,18 @@ const availableServices = computed(() => {
     }
   }
   return Array.from(services.entries()).sort((a, b) => a[1].localeCompare(b[1], 'de'));
+});
+
+const availableCategories = computed(() => {
+  const categories = new Set<string>();
+  for (const event of events.value) {
+    for (const service of event.services) {
+      if ((service as any).categoryName) {
+        categories.add((service as any).categoryName);
+      }
+    }
+  }
+  return Array.from(categories).sort((a, b) => a.localeCompare(b, 'de'));
 });
 
 const availableRooms = computed(() => {
@@ -226,9 +253,10 @@ Filter sollten in URL-Parametern gespeichert werden für Shareability:
 
 ```
 ?start=2026-02-27&days=90
-  &services=1,5,8        // Dienst-IDs
-  &rooms=Saal%20A,Saal%20B
-  &search=Hochzeit
+  &services=1,5,8                    // Dienst-IDs
+  &categories=Programm,Technik       // Kategorienamen (URL-encoded)
+  &rooms=Saal%20A,Saal%20B           // Raumnamen (URL-encoded)
+  &search=Hochzeit                   // Suchetext (URL-encoded)
 ```
 
 ### URL-Handling
@@ -265,6 +293,11 @@ function initFiltersFromURL() {
   const servicesParam = params.get('services');
   if (servicesParam) {
     filterServices.value = servicesParam.split(',').map(Number);
+  }
+  
+  const categoriesParam = params.get('categories');
+  if (categoriesParam) {
+    filterCategories.value = categoriesParam.split(',').map(decodeURIComponent);
   }
   
   const roomsParam = params.get('rooms');
@@ -306,15 +339,27 @@ function loadFiltersFromLocalStorage() {
 
 ## 🔄 Filter-Logik Detail
 
-### Kombinierte Filter (AND-Logik)
+### Kombinierte Filter (AND-Logik) - Event-Level
 ```
 Event wird angezeigt, wenn:
-  (Event-Suche ODER keine Suche)
+  (Event-Suche PASST ODER keine Suche aktiv)
   AND
   (hat Dienst aus Filter ODER keine Dienste gefiltert)
   AND
+  (hat Kategorie aus Filter ODER keine Kategorien gefiltert)
+  AND
   (hat Raum aus Filter ODER keine Räume gefiltert)
 ```
+
+### ⚠️ WICHTIG: Zwei-Ebenen-Filterung
+1. **Event-Level (App.vue)**: Bestimmt, welche Events angezeigt werden
+2. **Service-Level (EventCard.vue)**: Bestimmt, welche Services innerhalb eines Events angezeigt werden
+
+**Beispiel:**
+- Ereignis "Gottesdienst" hat Services: Predigt (Programm), Ton (Technik), Licht (Technik)
+- Benutzer filtert: Category = "Programm"
+- Ergebnis: Event wird angezeigt (hat mindestens eine Service mit Kategorie "Programm")
+- Aber: Nur "Predigt" wird angezeigt, nicht "Ton" oder "Licht"
 
 ### Performance-Optimierung
 - `computed()` mit Dependency-Tracking (automatisch optimiert)
@@ -337,28 +382,37 @@ const debouncedSearch = useDebounceFn((value: string) => {
 ## 🎬 Implementierungs-Reihenfolge
 
 ### Phase 1: Basis-Filterlogik
-- [ ] State-Variablen in `App.vue` hinzufügen
-- [ ] `availableServices` & `availableRooms` computed properties
-- [ ] `filteredEvents` computed property mit Filter-Logik
-- [ ] Update `visibleEvents` Logik oder ersetzen durch `filteredEvents`
+- [x] State-Variablen in `App.vue` hinzufügen (Services, Categories, Rooms, EventText)
+- [x] `availableServices`, `availableCategories`, `availableRooms` computed properties
+- [x] `filteredEvents` computed property mit Filter-Logik
+- [x] Event-Level Filterung mit AND-Logik
 
 ### Phase 2: UI-Komponenten
-- [ ] `FilterBar.vue` erstellen
-- [ ] `ServiceFilter.vue` mit PrimeVue MultiSelect
-- [ ] `RoomFilter.vue` mit PrimeVue MultiSelect
-- [ ] `EventSearch.vue` mit InputText
-- [ ] Styling & Responsive-Layout
+- [x] `FilterBar.vue` erstellen
+- [x] `ServiceFilter.vue` mit PrimeVue MultiSelect
+- [x] `CategoryFilter.vue` mit PrimeVue MultiSelect
+- [x] `RoomFilter.vue` mit PrimeVue MultiSelect
+- [x] `EventSearch.vue` mit InputText
+- [x] Styling & Responsive-Layout
+- [x] Tooltips mit ausgewählten Werten
 
 ### Phase 3: URL-Persistierung
-- [ ] `updateURL()` Funktion implementieren
-- [ ] `initFiltersFromURL()` beim Mount aufrufen
-- [ ] Filter-Änderungen → `updateURL()` triggern
+- [x] `updateURL()` Funktion implementieren (Services, Categories, Rooms, Search)
+- [x] `initFiltersFromURL()` beim Mount aufrufen
+- [x] Filter-Änderungen → `updateURL()` triggern
+- [x] URL-Encoding für Sonderzeichen (Räume, Kategorien)
 
-### Phase 4: Polish & Testing
-- [ ] Accessibility: ARIA-Labels, Keyboard-Navigation
-- [ ] Mobile-Responsivität testen
-- [ ] Performance-Optimierung (Debounce EventSearch)
-- [ ] Edge-Cases: Leere Filter, spezielle Zeichen in Suchtext
+### Phase 4: Service-Level Filterung (Kategorie-Filter)
+- [x] `filterCategories` Parameter zu `EventCard.vue` hinzufügen
+- [x] Service-Filterung in `sortedServices` computed property erweitern
+- [x] Service-Filterung auch für andere Filter (Services) prüfen
+- [x] Filter-Werte weitergeben von App.vue zu EventCard.vue
+
+### Phase 5: Polish & Testing
+- [x] Tooltips zeigen nur Werte, nicht Kriterium
+- [x] Accessibility: ARIA-Labels, Keyboard-Navigation
+- [x] Mobile-Responsivität testen
+- [ ] Edge-Cases: Leere Filter, spezielle Zeichen in Kategorienamen
 
 ---
 
@@ -418,9 +472,59 @@ const debouncedSearch = useDebounceFn((value: string) => {
 
 ---
 
+## 🐛 Troubleshooting & häufige Fehler
+
+### Problem: Filter filtert Events, aber nicht einzelne Services
+**Ursache**: Filter ist nur auf Event-Level implementiert, Services werden nicht gefiltert
+**Lösung**: 
+1. Prüfen, dass `filterServices` oder `filterCategories` zu `EventCard` Props hinzugefügt sind
+2. In `EventCard.vue` `sortedServices` computed property prüfen:
+```typescript
+// Service-Level Filterung muss hier stattfinden
+if (props.filterCategories && props.filterCategories.length > 0) {
+  services = services.filter((service) => {
+    const categoryName = (service as any).categoryName;
+    return categoryName && props.filterCategories!.includes(categoryName);
+  });
+}
+```
+
+### Problem: Kategorien-Filter zeigt keine Werte
+**Ursache**: Services haben keine `categoryName` Property
+**Lösung**: In `pollService.ts` prüfen, dass Service-Gruppen-Namen gesetzt werden:
+```typescript
+const categoryName = serviceGroupMap.get((serviceDef as any)?.serviceGroupId) || undefined;
+```
+
+### Problem: Filter funktioniert, aber Tooltip zeigt nicht die ausgewählten Werte
+**Ursache**: `getCategoryTooltip()` oder ähnliche Funktion fehlt in `FilterBar.vue`
+**Lösung**: Tooltip-Funktion hinzufügen:
+```typescript
+function getCategoryTooltip(): string {
+  if (props.modelValue.categories.length === 0) {
+    return 'Nach Dienstkategorien filtern';
+  }
+  return props.modelValue.categories.join(', ');
+}
+const categoryTooltip = computed(() => getCategoryTooltip());
+```
+
+### Problem: URL-Parameter werden nicht geladen
+**Ursache**: `initFiltersFromURL()` wird nicht aufgerufen oder Filter nicht aus URL extrahiert
+**Lösung**: 
+1. Sicherstellen, dass `initFiltersFromURL()` im `onMounted` Hook aufgerufen wird
+2. Für jede Filter-Art URL-Parameter prüfen und laden
+
+---
+
 ## 📚 Verwandte Dateien
 
-- `src/App.vue` - Haupt-Komponente
-- `src/types.ts` - Type-Definitionen
-- `src/components/EventCard.vue` - Event-Anzeige (wird gefiltert)
-- `src/pollService.ts` - Daten-Service
+- `src/App.vue` - Haupt-Komponente mit Filter-State & Event-Level Filterung
+- `src/components/FilterBar.vue` - Filter-UI Container
+- `src/components/ServiceFilter.vue` - Dienste-Filter Dropdown
+- `src/components/CategoryFilter.vue` - Kategorien-Filter Dropdown
+- `src/components/RoomFilter.vue` - Räume-Filter Dropdown
+- `src/components/EventSearch.vue` - Event-Textsuche
+- `src/components/EventCard.vue` - Event-Anzeige mit Service-Level Filterung
+- `src/types.ts` - Type-Definitionen (ServiceInfo, EventWithServices)
+- `src/pollService.ts` - Daten-Service (Kategorien-Mapping)
