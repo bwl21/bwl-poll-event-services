@@ -43,6 +43,9 @@ const showAssigned = ref(urlParams.get('showAssigned') === 'true');
 const filterServices = ref<number[]>(
     urlParams.get('services')?.split(',').map(Number).filter(n => !isNaN(n)) || []
 );
+const filterCategories = ref<string[]>(
+    urlParams.get('categories')?.split(',').map(decodeURIComponent) || []
+);
 const filterRooms = ref<string[]>(
     urlParams.get('rooms')?.split(',').map(decodeURIComponent) || []
 );
@@ -82,6 +85,19 @@ const availableServices = computed<Array<[number, string]>>(() => {
     return Array.from(services.entries()).sort((a, b) => a[1].localeCompare(b[1], 'de'));
 });
 
+const availableCategories = computed<string[]>(() => {
+    const categories = new Set<string>();
+    for (const event of events.value) {
+        for (const service of event.services) {
+            if ((service as any).categoryName) {
+                categories.add((service as any).categoryName);
+            }
+        }
+    }
+    // Sort alphabetically
+    return Array.from(categories).sort((a, b) => a.localeCompare(b, 'de'));
+});
+
 const availableRooms = computed<string[]>(() => {
     const rooms = new Set<string>();
     for (const event of events.value) {
@@ -114,7 +130,15 @@ const filteredEvents = computed(() => {
             if (!hasService) return false;
         }
 
-        // 3. Rooms filter
+        // 3. Categories filter
+        if (filterCategories.value.length > 0) {
+            const hasCategory = event.services.some((s) =>
+                filterCategories.value.includes((s as any).categoryName)
+            );
+            if (!hasCategory) return false;
+        }
+
+        // 4. Rooms filter
         if (filterRooms.value.length > 0) {
             const hasRoom = event.resources?.some((r) =>
                 filterRooms.value.includes(r.name)
@@ -201,6 +225,12 @@ function updateURL() {
         params.delete('services');
     }
     
+    if (filterCategories.value.length > 0) {
+        params.set('categories', filterCategories.value.map(encodeURIComponent).join(','));
+    } else {
+        params.delete('categories');
+    }
+    
     if (filterRooms.value.length > 0) {
         params.set('rooms', filterRooms.value.map(encodeURIComponent).join(','));
     } else {
@@ -216,8 +246,9 @@ function updateURL() {
     window.history.replaceState({}, '', `?${params.toString()}`);
 }
 
-function handleFilterChange(filters: { services: number[]; rooms: string[]; search: string }) {
+function handleFilterChange(filters: { services: number[]; categories: string[]; rooms: string[]; search: string }) {
     filterServices.value = filters.services;
+    filterCategories.value = filters.categories;
     filterRooms.value = filters.rooms;
     filterEventText.value = filters.search;
     updateURL();
@@ -225,6 +256,7 @@ function handleFilterChange(filters: { services: number[]; rooms: string[]; sear
 
 function resetFilters() {
     filterServices.value = [];
+    filterCategories.value = [];
     filterRooms.value = [];
     filterEventText.value = '';
     updateURL();
@@ -325,8 +357,9 @@ onMounted(loadData);
                 </p>
 
                 <FilterBar
-                    :model-value="{ services: filterServices, rooms: filterRooms, search: filterEventText }"
+                    :model-value="{ services: filterServices, categories: filterCategories, rooms: filterRooms, search: filterEventText }"
                     :available-services="availableServices"
+                    :available-categories="availableCategories"
                     :available-rooms="availableRooms"
                     :filtered-events-count="filteredEvents.length"
                     :start-date="startDate"

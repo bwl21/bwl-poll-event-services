@@ -6,16 +6,19 @@ import DatePicker from 'primevue/datepicker';
 import InputNumber from 'primevue/inputnumber';
 import ToggleSwitch from 'primevue/toggleswitch';
 import ServiceFilter from './ServiceFilter.vue';
+import CategoryFilter from './CategoryFilter.vue';
 import RoomFilter from './RoomFilter.vue';
 import EventSearch from './EventSearch.vue';
 
 const props = defineProps<{
   modelValue: {
     services: number[];
+    categories: string[];
     rooms: string[];
     search: string;
   };
   availableServices: Array<[number, string]>;
+  availableCategories: string[];
   availableRooms: string[];
   filteredEventsCount: number;
   startDate: Date;
@@ -24,7 +27,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: { services: number[]; rooms: string[]; search: string }): void;
+  (e: 'update:modelValue', value: { services: number[]; categories: string[]; rooms: string[]; search: string }): void;
   (e: 'update:startDate', value: Date): void;
   (e: 'update:days', value: number): void;
   (e: 'update:showAssigned', value: boolean): void;
@@ -50,6 +53,7 @@ watch(() => props.showAssigned, (newVal) => {
 
 const activeFiltersCount = computed(() => {
   return (props.modelValue.services.length > 0 ? 1 : 0) +
+         (props.modelValue.categories.length > 0 ? 1 : 0) +
          (props.modelValue.rooms.length > 0 ? 1 : 0) +
          (props.modelValue.search.length > 0 ? 1 : 0);
 });
@@ -58,6 +62,13 @@ function updateServices(services: number[]) {
   emit('update:modelValue', {
     ...props.modelValue,
     services,
+  });
+}
+
+function updateCategories(categories: string[]) {
+  emit('update:modelValue', {
+    ...props.modelValue,
+    categories,
   });
 }
 
@@ -164,6 +175,17 @@ const roomTooltip = computed(() => getRoomTooltip());
           :model-value="modelValue.services"
           :options="availableServices"
           @update:model-value="updateServices"
+          class="flex-item"
+        />
+      </div>
+
+      <!-- Kategorien -->
+      <div class="filter-item-wrapper" v-tooltip="'Nach Dienstkategorien filtern'">
+        <label class="filter-label-small">Kategorien</label>
+        <CategoryFilter
+          :model-value="modelValue.categories"
+          :options="availableCategories"
+          @update:model-value="updateCategories"
           class="flex-item"
         />
       </div>
