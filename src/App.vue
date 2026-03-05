@@ -132,9 +132,10 @@ const filteredEvents = computed(() => {
 
         // 3. Categories filter
         if (filterCategories.value.length > 0) {
-            const hasCategory = event.services.some((s) =>
-                filterCategories.value.includes((s as any).categoryName)
-            );
+            const hasCategory = event.services.some((s) => {
+                const categoryName = (s as any).categoryName;
+                return categoryName && filterCategories.value.includes(categoryName);
+            });
             if (!hasCategory) return false;
         }
 
