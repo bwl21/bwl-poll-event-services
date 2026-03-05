@@ -18,6 +18,7 @@ const props = defineProps<{
     currentUser: UserInfo;
     showAssigned: boolean;
     filterServices?: number[];
+    filterCategories?: string[];
 }>();
 
 const emit = defineEmits<{
@@ -84,6 +85,14 @@ const sortedServices = computed(() => {
         services = services.filter(
             (service) => props.filterServices!.includes(service.serviceId)
         );
+    }
+    
+    // Filter by selected categories (from category filter)
+    if (props.filterCategories && props.filterCategories.length > 0) {
+        services = services.filter((service) => {
+            const categoryName = (service as any).categoryName;
+            return categoryName && props.filterCategories!.includes(categoryName);
+        });
     }
     
     return services;

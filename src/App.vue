@@ -406,6 +406,7 @@ onMounted(loadData);
                          :current-user="currentUser!"
                          :show-assigned="showAssigned"
                          :filter-services="filterServices.length > 0 ? filterServices : undefined"
+                         :filter-categories="filterCategories.length > 0 ? filterCategories : undefined"
                          @response-saved="handleResponseSaved"
                      />
                  </div>
