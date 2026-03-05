@@ -117,6 +117,13 @@ function getServiceTooltip(): string {
   return `Dienste: ${selected}`;
 }
 
+function getCategoryTooltip(): string {
+  if (props.modelValue.categories.length === 0) {
+    return 'Nach Dienstkategorien filtern';
+  }
+  return `Kategorien: ${props.modelValue.categories.join(', ')}`;
+}
+
 function getRoomTooltip(): string {
   if (props.modelValue.rooms.length === 0) {
     return 'Nach Räumen filtern';
@@ -125,6 +132,7 @@ function getRoomTooltip(): string {
 }
 
 const serviceTooltip = computed(() => getServiceTooltip());
+const categoryTooltip = computed(() => getCategoryTooltip());
 const roomTooltip = computed(() => getRoomTooltip());
 </script>
 
@@ -180,7 +188,7 @@ const roomTooltip = computed(() => getRoomTooltip());
       </div>
 
       <!-- Kategorien -->
-      <div class="filter-item-wrapper" v-tooltip="'Nach Dienstkategorien filtern'">
+      <div class="filter-item-wrapper" v-tooltip="categoryTooltip">
         <label class="filter-label-small">Kategorien</label>
         <CategoryFilter
           :model-value="modelValue.categories"
