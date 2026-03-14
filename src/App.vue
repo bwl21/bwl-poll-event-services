@@ -244,7 +244,7 @@ function updateURL() {
         params.delete('search');
     }
     
-    window.history.replaceState({}, '', `?${params.toString()}`);
+    window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
 }
 
 function handleFilterChange(filters: { services: number[]; categories: string[]; rooms: string[]; search: string }) {
@@ -370,7 +370,7 @@ onMounted(loadData);
                     @update:model-value="handleFilterChange"
                     @update:start-date="(date) => { startDate = date; loadData(); }"
                     @update:days="(value) => { days = value; loadData(); }"
-                    @update:show-assigned="(value) => { showAssigned = value; }"
+                    @update:show-assigned="(value) => { showAssigned = value; updateURL(); }"
                     @reset="resetFilters"
                     @copy-url="copyURLToClipboard"
                 />
