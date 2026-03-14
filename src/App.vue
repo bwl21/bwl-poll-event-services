@@ -264,9 +264,10 @@ function resetFilters() {
 }
 
 function copyURLToClipboard() {
-    // Get current settings including filters
+    // Get current full URL and only replace query params
+    // This preserves the full path (e.g., /ccm/bwl-poll-event-services/)
     const params = new URLSearchParams(window.location.search);
-    const baseURL = window.location.origin + window.location.pathname;
+    const baseURL = window.location.href.split('?')[0];
     const urlWithParams = `${baseURL}?${params.toString()}`;
     
     // Copy to clipboard
