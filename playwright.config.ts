@@ -69,6 +69,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
+    // For screenshots: always restart. For other tests: reuse (faster)
+    reuseExistingServer: process.env.SCREENSHOTS !== 'true' && !process.env.CI,
   },
 });

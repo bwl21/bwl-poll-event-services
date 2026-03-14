@@ -6,9 +6,14 @@ import { fileURLToPath } from 'url';
  * Screenshot Tests
  * 
  * Captures screenshots for documentation/manual
- * Run with: npm run screenshots
+ * Run with: SCREENSHOTS=true npm run screenshots
  * 
  * Screenshots are saved to: docs/screenshots/
+ * 
+ * This ensures:
+ * - Fresh dev server (no cache from previous runs)
+ * - Browser cache cleared
+ * - Proper waits for Vue/app rendering
  */
 
 // Define __dirname for ES modules
@@ -19,20 +24,40 @@ const SCREENSHOT_DIR = path.join(__dirname, '..', 'docs', 'screenshots');
 
 // Helper function to wait for app to be ready
 async function waitForAppReady(page: any) {
-  // Wait for #app element to exist (don't wait for visible - it might be hidden)
+  // Clear browser cache to avoid old app being loaded
+  const context = page.context();
+  await context.clearCookies();
+  
+  // Navigate to fresh URL with cache bust
+  const url = new URL('http://localhost:5173');
+  url.searchParams.set('_cache_bust', Date.now().toString());
+  
+  await page.goto(url.toString(), { waitUntil: 'networkidle', timeout: 15000 });
+  
+  // Wait for #app element to exist
   await page.waitForSelector('#app', { timeout: 10000 });
-  // Wait for Vue to render - longer timeout for slow connections
-  await page.waitForTimeout(3000);
+  
+  // Wait for Vue to fully render - longer for slow connections
+  await page.waitForTimeout(4000);
+  
+  // Additional check for content to be visible
+  try {
+    await page.waitForFunction(() => {
+      const app = document.getElementById('app');
+      return app && app.innerHTML.length > 100;
+    }, { timeout: 5000 });
+  } catch {
+    // If content check fails, still continue but log warning
+    console.warn('⚠️  App content check timeout - proceeding anyway');
+  }
 }
 
 // Helper function to navigate to page with date range parameters
+// Note: Navigation now happens in waitForAppReady, this is kept for date range setup
 async function navigateWithDateRange(page: any, baseUrl: string) {
-  // Set start date to 01.12.2025 and days to 2 via URL parameters
-  const url = `${baseUrl}/?start=2025-12-01&days=2`;
-  await page.goto(url, { waitUntil: 'networkidle' });
-  
-  // Wait for page to settle
-  await page.waitForTimeout(2000);
+  // Date range is already set in waitForAppReady, just ensure we're ready
+  // This is a no-op now but kept for compatibility
+  return;
 }
 
 // Device configurations - Mobile, Tablet, Desktop

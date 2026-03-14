@@ -513,7 +513,14 @@ Nach der Installation können Sie testen:
 
 ---
 
-**Version 0.7.1** | Letzte Aktualisierung: Mar 2026
+**Version 0.8.0** | Letzte Aktualisierung: Mar 14 2026
+- ✨ **Peer-Antworten Sichtbarkeit**: Mitarbeiter sehen jetzt, wer Ja/Vielleicht/Nein zu jedem Dienst geantwortet hat
+- ✨ **Service-Konfiguration (Admin)**: Neue Admin-Tab zum Konfigurieren der Sichtbarkeit von Antworten pro Service
+- ✨ **Kategorie-Filter**: Neuer Filter-Typ zur Filterung nach Service-Kategorien
+- ✨ **Räume-Filter (Admin)**: Admin kann nach Räumen/Ressourcen filtern
+- ✨ **Admin Service-Visibility**: Administratoren sehen nur Services ihrer eigenen Gruppen (Toggle: "Nur meine Services")
+
+**Version 0.7.1** | Mar 2026
 - 🎨 **Admin-Panel Verbesserungen:**
   - 🟠 "Vielleicht"-Antworten zeigen nun orange Farbe (zur Unterscheidung von "Ja" und "Nein")
   - 📊 Bessere visuelle Unterscheidung der Response-Status im Admin-Tab
