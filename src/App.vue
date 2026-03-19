@@ -369,7 +369,7 @@ onMounted(loadData);
                     :show-assigned="showAssigned"
                     @update:model-value="handleFilterChange"
                     @update:start-date="(date) => { startDate = date; loadData(); }"
-                    @update:days="(value) => { days = value; loadData(); }"
+                    @update:days="(value) => { days = value; loadData(); updateURL(); }"
                     @update:show-assigned="(value) => { showAssigned = value; updateURL(); }"
                     @reset="resetFilters"
                     @copy-url="copyURLToClipboard"
