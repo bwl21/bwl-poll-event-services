@@ -24,6 +24,7 @@
     },
     "dependencies": {
         "@primeuix/themes": "^2.0.3",
+        "@revolist/revogrid": "^4.20.4",
         "@vitejs/plugin-vue": "^6.0.3",
         "floating-vue": "^5.2.2",
         "primeicons": "^7.0.0",
