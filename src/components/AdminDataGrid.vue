@@ -73,36 +73,43 @@ const gridData = computed(() => {
 
 // All available columns (used for select options)
 const allColumns = [
-        { prop: 'eventName', name: 'Veranstaltung', width: 200, minWidth: 150, canResize: true },
-        { prop: 'date', name: 'Datum', width: 110, minWidth: 100, canResize: true },
-        { prop: 'time', name: 'Uhrzeit', width: 80, minWidth: 70, canResize: true },
-        { prop: 'weekday', name: 'Wochentag', width: 120, minWidth: 100, canResize: true },
-        { prop: 'serviceName', name: 'Dienst', width: 170, minWidth: 140, canResize: true },
-        { prop: 'serviceCategoryName', name: 'Kategorie', width: 140, minWidth: 120, canResize: true },
-        { prop: 'rooms', name: 'Raum', width: 120, minWidth: 100, canResize: true },
-         { prop: 'assignment', name: 'Besetzung', width: 140, minWidth: 120, canResize: true },
-         { prop: 'userName', name: 'Person', width: 140, minWidth: 110, canResize: true },
-         { prop: 'response', name: 'Zusage', width: 100, minWidth: 80, cellTemplate: (h: any, { value }: any) => {
-            const displayMap: any = {
-                yes: { label: 'Ja', color: '#4caf50' },
-                maybe: { label: 'Vielleicht', color: '#ff9800' },
-                no: { label: 'Nein', color: '#f44336' }
-            };
-            const display = displayMap[value] || { label: value || '-', color: '#999' };
-            return h('span', {
-                style: {
-                    backgroundColor: `${display.color}20`,
-                    color: display.color,
-                    padding: '3px 6px',
-                    borderRadius: '3px',
-                    fontWeight: 'bold',
-                    display: 'inline-block',
-                    fontSize: '0.8rem'
-                }
-            }, display.label);
-        }, canResize: true },
-        { prop: 'comment', name: 'Notiz', width: 180, minWidth: 140, canResize: true },
-        ];
+  { prop: 'eventName', name: 'Event', size: 200, minSize: 150, maxSize: 300, sortable: true },
+  { prop: 'date', name: 'Datum', size: 110, minSize: 100, maxSize: 110, sortable: true },
+  { prop: 'time', name: 'Zeit', size: 80, minSize: 80, maxSize: 80, sortable: true },
+  { prop: 'weekday', name: 'Tag', size: 120, minSize: 120, maxSize: 120, sortable: true },
+  { prop: 'serviceName', name: 'Dienst', size: 140, minSize: 140, maxSize: 200, sortable: true },
+  { prop: 'serviceCategoryName', name: 'Kategorie', size: 140, minSize: 120, maxSize: 160, sortable: true },
+  { prop: 'rooms', name: 'Raum', size: 120, minSize: 100, sortable: true },
+  { prop: 'assignment', name: 'Besetzung', size: 140, minSize: 120, sortable: true },
+  { prop: 'userName', name: 'Person', size: 140, minSize: 110, sortable: true },
+  {
+    prop: 'response',
+    name: 'Zusage',
+    size: 100,
+    minSize: 80,
+    sortable: true,
+    cellTemplate: (h, { value }) => {
+      const displayMap = {
+        yes: { label: 'Ja', color: '#4caf50' },
+        maybe: { label: 'Vielleicht', color: '#ff9800' },
+        no: { label: 'Nein', color: '#f44336' }
+      }
+      const display = displayMap[value] || { label: value || '-', color: '#999' }
+      return h('span', {
+        style: {
+          backgroundColor: `${display.color}20`,
+          color: display.color,
+          padding: '3px 6px',
+          borderRadius: '3px',
+          fontWeight: 'bold',
+          display: 'inline-block',
+          fontSize: '0.8rem'
+        }
+      }, display.label)
+    }
+  },
+  { prop: 'comment', name: 'Notiz', size: 180, minSize: 140, sortable: true }
+]
 
 // Column definitions for revo-grid (filtered)
 const columns = computed(() => {
@@ -300,6 +307,8 @@ onMounted(async () => {
                 :filter="true"
                 :sort="true"
                 :grouping="groupingConfig"
+                auto-size-column="true"
+                @column-resize-start="onColumnResizeStart"
             />
         </div>
     </div>
