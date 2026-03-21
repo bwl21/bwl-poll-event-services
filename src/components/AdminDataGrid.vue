@@ -80,8 +80,9 @@ const allColumns = [
         { prop: 'serviceName', name: 'Dienst', width: 170, minWidth: 140, canResize: true },
         { prop: 'serviceCategoryName', name: 'Kategorie', width: 140, minWidth: 120, canResize: true },
         { prop: 'rooms', name: 'Raum', width: 120, minWidth: 100, canResize: true },
-        { prop: 'userName', name: 'Person', width: 140, minWidth: 110, canResize: true },
-        { prop: 'response', name: 'Zusage', width: 100, minWidth: 80, cellTemplate: (h: any, { value }: any) => {
+         { prop: 'assignment', name: 'Besetzung', width: 140, minWidth: 120, canResize: true },
+         { prop: 'userName', name: 'Person', width: 140, minWidth: 110, canResize: true },
+         { prop: 'response', name: 'Zusage', width: 100, minWidth: 80, cellTemplate: (h: any, { value }: any) => {
             const displayMap: any = {
                 yes: { label: 'Ja', color: '#4caf50' },
                 maybe: { label: 'Vielleicht', color: '#ff9800' },
@@ -101,19 +102,7 @@ const allColumns = [
             }, display.label);
         }, canResize: true },
         { prop: 'comment', name: 'Notiz', width: 180, minWidth: 140, canResize: true },
-        { prop: 'assignmentCount', name: 'Besetzung', width: 100, minWidth: 80, cellTemplate: (h: any, { value }: any) => {
-            return h('span', {
-                style: {
-                    background: value > 0 ? '#e8f5e9' : '#ffebee',
-                    color: value > 0 ? '#2e7d32' : '#c62828',
-                    padding: '3px 6px',
-                    borderRadius: '3px',
-                    fontWeight: 'bold',
-                    fontSize: '0.8rem'
-                }
-            }, `${value}/${(value > 0 ? '✓' : '−')}`);
-        }, canResize: true },
-];
+        ];
 
 // Column definitions for revo-grid (filtered)
 const columns = computed(() => {
