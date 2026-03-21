@@ -615,6 +615,41 @@ onMounted(async () => {
     width: 100%;
 }
 
+/* RevoGrid grouping - indent all group labels and their content rows */
+:deep(.rgGroupLabel) {
+    padding-left: 40px !important;
+}
+
+/* Apply additional indentation based on nesting level */
+:deep(.rgRow[data-level="1"] .rgGroupLabel) {
+    padding-left: 40px !important;
+}
+
+:deep(.rgRow[data-level="2"] .rgGroupLabel) {
+    padding-left: 70px !important;
+}
+
+:deep(.rgRow[data-level="3"] .rgGroupLabel) {
+    padding-left: 100px !important;
+}
+
+/* Regular data rows inherit proper indentation */
+:deep(.rgRow .rgCell) {
+    padding-left: 10px;
+}
+
+:deep(.rgRow[data-level="1"] .rgCell:first-child) {
+    padding-left: 40px !important;
+}
+
+:deep(.rgRow[data-level="2"] .rgCell:first-child) {
+    padding-left: 70px !important;
+}
+
+:deep(.rgRow[data-level="3"] .rgCell:first-child) {
+    padding-left: 100px !important;
+}
+
 @media (max-width: 768px) {
     .filter-controls {
         flex-direction: column;
