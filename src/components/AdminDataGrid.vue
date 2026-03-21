@@ -15,6 +15,39 @@ const gridRef = ref<any>(null);
 const showEmptyServices = ref(true);
 const globalFilter = ref('');
 const groupByProps = ref<string[]>([]);
+const expandedGroups = ref<boolean>(false);
+
+// Load settings from localStorage
+function loadSettings() {
+    try {
+        const saved = localStorage.getItem('admin-datagrid-settings');
+        if (saved) {
+            const settings = JSON.parse(saved);
+            groupByProps.value = settings.groupByProps || [];
+            showEmptyServices.value = settings.showEmptyServices !== false;
+            globalFilter.value = settings.globalFilter || '';
+        }
+    } catch (e) {
+        debugLog('Failed to load settings:', e);
+    }
+}
+
+// Save settings to localStorage
+function saveSettings() {
+    try {
+        const settings = {
+            groupByProps: groupByProps.value,
+            showEmptyServices: showEmptyServices.value,
+            globalFilter: globalFilter.value
+        };
+        localStorage.setItem('admin-datagrid-settings', JSON.stringify(settings));
+    } catch (e) {
+        debugLog('Failed to save settings:', e);
+    }
+}
+
+// Watch for changes and save
+watch([groupByProps, showEmptyServices, globalFilter], saveSettings, { deep: true });
 
 // Prepare data for grid
 const gridData = computed(() => {
@@ -68,6 +101,18 @@ const allColumns = [
             }, display.label);
         }, canResize: true },
         { prop: 'comment', name: 'Notiz', width: 180, minWidth: 140, canResize: true },
+        { prop: 'assignmentCount', name: 'Besetzung', width: 100, minWidth: 80, cellTemplate: (h: any, { value }: any) => {
+            return h('span', {
+                style: {
+                    background: value > 0 ? '#e8f5e9' : '#ffebee',
+                    color: value > 0 ? '#2e7d32' : '#c62828',
+                    padding: '3px 6px',
+                    borderRadius: '3px',
+                    fontWeight: 'bold',
+                    fontSize: '0.8rem'
+                }
+            }, `${value}/${(value > 0 ? '✓' : '−')}`);
+        }, canResize: true },
 ];
 
 // Column definitions for revo-grid (filtered)
@@ -138,6 +183,30 @@ function updateGroupProp(index: number, event: Event) {
     groupByProps.value = [...groupByProps.value];
 }
 
+async function closeAllGroups() {
+    if (!gridRef.value || groupByProps.value.length === 0) {
+        return;
+    }
+    
+    // First set expandedAll to true to trigger a change
+    expandedGroups.value = true;
+    await nextTick();
+    gridRef.value.grouping = {
+        props: groupByProps.value,
+        expandedAll: true,
+        prevExpanded: {}
+    };
+    
+    // Then immediately set it to false to collapse all
+    await nextTick();
+    expandedGroups.value = false;
+    gridRef.value.grouping = {
+        props: groupByProps.value,
+        expandedAll: false,
+        prevExpanded: {}
+    };
+}
+
 // Grouping config
 const groupingConfig = computed(() => {
     if (groupByProps.value.length === 0) {
@@ -145,11 +214,12 @@ const groupingConfig = computed(() => {
     }
     return {
         props: groupByProps.value,
-        expandedAll: true
+        expandedAll: expandedGroups.value
     };
 });
 
 onMounted(async () => {
+    loadSettings();
     await nextTick();
     
     if (gridRef.value) {
@@ -215,6 +285,9 @@ onMounted(async () => {
                     
                     <button @click="addGroupProp" class="add-grouping-btn">
                         <i class="pi pi-plus"></i> Hinzufügen
+                    </button>
+                    <button v-if="groupByProps.length > 0" @click="closeAllGroups" class="close-groups-btn">
+                        <i class="pi pi-compress"></i> Alle schließen
                     </button>
                 </div>
             </div>
@@ -447,6 +520,25 @@ onMounted(async () => {
 .add-grouping-btn:hover {
     background: #f0f8ff;
     border-color: #0066cc;
+}
+
+.close-groups-btn {
+    padding: 6px 12px;
+    background: white;
+    border: 1px solid #ffb3b3;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #d32f2f;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+}
+
+.close-groups-btn:hover {
+    background: #ffebee;
+    border-color: #d32f2f;
 }
 
 .stats {

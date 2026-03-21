@@ -89,9 +89,22 @@ function handleExportAll() {
                     @response-deleted="handleResponseDeleted"
                     @response-saved="handleResponseSaved"
                 />
-            </TabPanel>
+                </TabPanel>
 
-            <TabPanel>
+                <TabPanel>
+                <template #header>
+                 <div v-tooltip="'Ergebnisse mit interaktivem Datagrid'">
+                   <i class="pi pi-table mr-2"></i>
+                   <span>DataGrid</span>
+                 </div>
+                </template>
+                <AdminDataGrid
+                   :responses="responses"
+                   :events="loadingAdminEvents ? events : adminEvents"
+                />
+                </TabPanel>
+
+                <TabPanel>
                 <template #header>
                     <div v-tooltip="'Konfiguriere Services und ihre Sichtbarkeit'">
                         <i class="pi pi-sliders-h mr-2"></i>
@@ -99,22 +112,9 @@ function handleExportAll() {
                     </div>
                 </template>
                 <AdminConfig :events="loadingAdminEvents ? events : adminEvents" @config-changed="() => emit('config-changed')" />
-            </TabPanel>
+                </TabPanel>
 
-            <TabPanel>
-                 <template #header>
-                     <div v-tooltip="'Ergebnisse mit interaktivem Datagrid'">
-                         <i class="pi pi-table mr-2"></i>
-                         <span>DataGrid</span>
-                     </div>
-                 </template>
-                 <AdminDataGrid
-                     :responses="responses"
-                     :events="loadingAdminEvents ? events : adminEvents"
-                 />
-             </TabPanel>
-
-            <TabPanel>
+                <TabPanel>
                  <template #header>
                      <div v-tooltip="'Exportiere alle Daten als Excel-Datei'">
                          <i class="pi pi-file-excel mr-2"></i>
