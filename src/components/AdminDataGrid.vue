@@ -97,13 +97,14 @@ const allColumns = [
       const display = displayMap[value] || { label: value || '-', color: '#999' }
       return h('span', {
         style: {
-          backgroundColor: `${display.color}20`,
-          color: display.color,
+          backgroundColor: `${display.color}20 !important`,
+          color: `${display.color} !important`,
           padding: '3px 6px',
           borderRadius: '3px',
           fontWeight: 'bold',
           display: 'inline-block',
-          fontSize: '0.8rem'
+          fontSize: '0.8rem',
+          minWidth: '20px'
         }
       }, display.label)
     }
