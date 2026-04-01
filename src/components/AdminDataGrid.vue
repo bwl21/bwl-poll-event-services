@@ -89,24 +89,22 @@ const allColumns = [
     minSize: 80,
     sortable: true,
     cellTemplate: (h, { value }) => {
-      const displayMap = {
-        yes: { label: 'Ja', color: '#4caf50' },
-        maybe: { label: 'Vielleicht', color: '#ff9800' },
-        no: { label: 'Nein', color: '#f44336' }
+      const labelMap = {
+        yes: 'Ja',
+        maybe: 'Vielleicht',
+        no: 'Nein'
       }
-      const display = displayMap[value] || { label: value || '-', color: '#999' }
+      const classMap = {
+        yes: 'response-yes',
+        maybe: 'response-maybe',
+        no: 'response-no'
+      }
+      const label = labelMap[value] || '-'
+      const responseClass = classMap[value] || 'response-empty'
+      
       return h('span', {
-        style: {
-          backgroundColor: `${display.color}20 !important`,
-          color: `${display.color} !important`,
-          padding: '3px 6px',
-          borderRadius: '3px',
-          fontWeight: 'bold',
-          display: 'inline-block',
-          fontSize: '0.8rem',
-          minWidth: '20px'
-        }
-      }, display.label)
+        class: `response-badge ${responseClass}`
+      }, label)
     }
   },
   { prop: 'comment', name: 'Notiz', size: 180, minSize: 140, sortable: true }
@@ -647,6 +645,37 @@ onMounted(async () => {
 
 :deep(.rgRow[data-level="3"] .rgCell:first-child) {
     padding-left: 100px !important;
+}
+
+/* Response column styling */
+:deep(.response-badge) {
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-weight: bold;
+    display: inline-block;
+    font-size: 0.8rem;
+    min-width: 20px;
+    text-align: center;
+}
+
+:deep(.response-yes) {
+    background: #4caf5020;
+    color: #4caf50;
+}
+
+:deep(.response-maybe) {
+    background: #ff980020;
+    color: #ff9800;
+}
+
+:deep(.response-no) {
+    background: #f4433620;
+    color: #f44336;
+}
+
+:deep(.response-empty) {
+    background: #99920;
+    color: #999;
 }
 
 @media (max-width: 768px) {
