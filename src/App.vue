@@ -302,6 +302,17 @@ function handleResponseDeleted(entry: ServicePollEntry) {
     }
 }
 
+function handleResponsesDeleted(eventId: number, deletedCount: number) {
+    allResponses.value = allResponses.value.filter((response) => response.eventId !== eventId);
+    debugLog('Deleted responses for event', eventId, 'count:', deletedCount);
+    toast.add({
+        severity: 'success',
+        summary: 'Einträge gelöscht',
+        detail: `${deletedCount} Antworten für dieses Event wurden entfernt.`,
+        life: 3000,
+    });
+}
+
 function handleResponseSavedAdmin(entry: ServicePollEntry) {
     debugLog('handleResponseSavedAdmin called with:', entry);
     const idx = allResponses.value.findIndex(
@@ -402,6 +413,7 @@ onMounted(loadData);
                          v-for="event in filteredEvents"
                          :key="event.id"
                          :event="event"
+                         :all-events="events"
                          :all-responses="allResponses"
                          :user-responses="userResponses"
                          :current-user="currentUser!"
@@ -409,6 +421,7 @@ onMounted(loadData);
                          :filter-services="filterServices.length > 0 ? filterServices : undefined"
                          :filter-categories="filterCategories.length > 0 ? filterCategories : undefined"
                          @response-saved="handleResponseSaved"
+                         @responses-deleted="handleResponsesDeleted"
                      />
                  </div>
             </TabPanel>

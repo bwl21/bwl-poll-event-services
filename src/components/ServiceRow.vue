@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
+import { useToast } from 'primevue/usetoast';
 import Button from 'primevue/button';
 import Textarea from 'primevue/textarea';
 import Tag from 'primevue/tag';
@@ -16,6 +17,7 @@ const COMMENT_DEBOUNCE_MS = 1000;
 const STATUS_MESSAGE_DURATION_MS = 2000;
 
 const debugLog = createLogger('SERVICE-ROW');
+const toast = useToast();
 
 const props = defineProps<{
     eventId: number;
@@ -33,7 +35,6 @@ const emit = defineEmits<{
 const selectedResponse = ref<PollResponse>(props.userResponse?.response || null);
 const comment = ref(props.userResponse?.comment || '');
 const saving = ref(false);
-const statusMessage = ref<{ type: 'success' | 'error'; text: string } | null>(null);
 const showCommentForm = ref(false);
 
 // Debounce timer for comment
@@ -46,8 +47,14 @@ watch(
         if (newVal) {
             selectedResponse.value = newVal.response;
             comment.value = newVal.comment;
+            showCommentForm.value = false;
+        } else {
+            selectedResponse.value = null;
+            comment.value = '';
+            showCommentForm.value = false;
         }
-    }
+    },
+    { immediate: true }
 );
 
 const yesResponses = computed(() =>
@@ -89,7 +96,6 @@ async function withdrawResponse() {
 
 async function saveResponse() {
     saving.value = true;
-    statusMessage.value = null;
 
     try {
         await savePollResponse(
@@ -110,14 +116,20 @@ async function saveResponse() {
         };
 
         emit('response-saved', entry);
-        statusMessage.value = { type: 'success', text: 'Gespeichert' };
-
-        setTimeout(() => {
-            statusMessage.value = null;
-        }, STATUS_MESSAGE_DURATION_MS);
+        toast.add({
+            severity: 'success',
+            summary: 'Gespeichert',
+            detail: 'Antwort wurde gespeichert.',
+            life: STATUS_MESSAGE_DURATION_MS,
+        });
     } catch (e) {
         debugLog('Error saving response:', e);
-        statusMessage.value = { type: 'error', text: 'Fehler beim Speichern' };
+        toast.add({
+            severity: 'error',
+            summary: 'Fehler',
+            detail: 'Antwort konnte nicht gespeichert werden.',
+            life: STATUS_MESSAGE_DURATION_MS,
+        });
     } finally {
         saving.value = false;
     }
@@ -221,9 +233,6 @@ const allComments = computed(() => {
                 @input="handleCommentInput"
                 @blur="showCommentForm = comment.trim().length > 0"
             />
-            <small v-if="statusMessage" :class="['status-msg', statusMessage.type]">
-                {{ statusMessage.text }}
-            </small>
         </td>
         <td class="assignment">
             <Tag
@@ -343,10 +352,6 @@ const allComments = computed(() => {
             @input="handleCommentInput"
             @blur="showCommentForm = comment.trim().length > 0"
         />
-
-        <small v-if="statusMessage" :class="['status-msg', statusMessage.type]">
-            {{ statusMessage.text }}
-        </small>
 
         <div class="other-responses mobile">
             <div v-if="!service.votesVisible" class="votes-hidden-message">
@@ -486,20 +491,6 @@ const allComments = computed(() => {
     width: 100%;
     font-size: 0.875rem;
     resize: vertical;
-}
-
-.status-msg {
-    display: block;
-    margin-top: 4px;
-    font-size: 0.75rem;
-}
-
-.status-msg.success {
-    color: #4caf50;
-}
-
-.status-msg.error {
-    color: #f44336;
 }
 
 .assignment {

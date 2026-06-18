@@ -158,6 +158,8 @@ Unter jedem Dienst gibt es ein **Kommentarfeld**, um zusätzliche Informationen 
 - Automatisch nach 1 Sekunde gespeichert
 - Und erneut gespeichert, wenn Sie auf "Ja/Vielleicht/Nein" klicken
 
+Nach dem Speichern erscheint oben rechts eine kleine **Toast-Meldung** mit einer Bestätigung oder Fehlermeldung.
+
 #### 6. Antworten anderer sehen
 **Nach Ihrem Klick sehen Sie:**
 - Wer hat **"Ja"** gesagt: "Anna, Peter"
@@ -168,7 +170,15 @@ Unter jedem Dienst gibt es ein **Kommentarfeld**, um zusätzliche Informationen 
 #### 7. Änderungen speichern
 - **Automatisch**: Kommentare werden 1 Sekunde nach Eingabe gespeichert
 - **Explizit**: Durch Klick auf Ja/Vielleicht/Nein wird alles gespeichert
-- **Status**: "✓ Gespeichert" oder "✓ Kommentar gespeichert" bestätigt das Speichern
+- **Rückmeldung**: Eine Toast-Meldung bestätigt das Speichern, z. B. "Gespeichert"
+
+#### 8. Sammelaktionen pro Event
+In jeder Event-Karte gibt es drei Sammelaktionen im Kopfbereich:
+- **Event absagen**: Setzt alle sichtbaren Dienste dieses Events auf "Nein"
+- **Ganzen Tag absagen**: Setzt alle Dienste dieses Tages auf "Nein"
+- **Alle Antworten löschen**: Entfernt alle gespeicherten Antworten zu diesem Event
+
+Während die Aktion läuft, zeigt der Button einen **Spinner**. Danach erscheint eine Toast-Meldung mit Erfolg oder Fehler.
 
 ---
 
@@ -446,6 +456,12 @@ Nach der Installation können Sie testen:
 - Dies ist z.B. nötig, wenn sich ein Mitarbeiter abmeldet oder die Antwort obsolet ist
 - Gelöschte Antworten können nicht wiederhergestellt werden → mit Bedacht nutzen!
 - Tipp: Statt Löschen kann man auch bearbeiten und auf "keine Angabe" setzen
+
+#### **F: Kann ich alle Antworten eines Events gesammelt löschen?**
+**A:**
+- Ja. In der Event-Karte gibt es die Aktion **"Alle Antworten löschen"**
+- Damit werden alle gespeicherten Antworten zu diesem Event entfernt
+- Das ChurchTools-Event selbst bleibt bestehen
 
 #### **F: Wo finde ich die Excel-Datei nach dem Export?**
 **A:**
