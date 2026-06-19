@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.9.1] - Juni 2026
+
+### Added
+
+- **Admin DataGrid** - Neuer Admin-Tab mit RevoGrid-basierter Tabellenansicht, Sortierung, Filterung und Gruppierung.
+- **Gruppierte gleiche Dienste** - Mehrfach vorhandene identische Dienste werden in der Event-Karte nur noch einmal angezeigt und mit einer Anzahl markiert.
+- **Bulk-Actions in Event-Karten** - Events oder ganze Tage können gesammelt mit "Nein" beantwortet werden.
+- **Antworten pro Event löschen** - Alle gespeicherten Antworten eines Events können entfernt werden, ohne das ChurchTools-Event zu löschen.
+
+### Changed
+
+- **Admin-Auswertung** - Besetzungen und Service-Daten werden in der DataGrid-Ansicht kompakter auswertbar.
+- **Rückmeldungen** - Speichern, Bulk-Actions und Löschen nutzen Toast-Meldungen und Ladezustände.
+- **Dokumentation** - Benutzerhandbuch und technische Hinweise wurden für die neuen Aktionen ergänzt.
+
+### Fixed
+
+- Gleiche Dienste pro Event werden nicht mehr mehrfach als separate Antwortzeilen angezeigt.
+- Lokaler Kartenzustand wird nach dem Löschen von Antworten aktualisiert.
+- RevoGrid-Darstellungsprobleme durch Style- und Größenanpassungen wurden reduziert.
+
+---
+
 ## [0.8.0] - März 2026
 
 ### ✨ Added
@@ -140,10 +163,11 @@ npm run test:e2e
 
 | Version | Release | Status |
 |---------|---------|--------|
-| 0.8.0 | März 2026 | ✅ Aktuell |
+| 0.9.1 | Juni 2026 | ✅ Aktuell |
+| 0.8.0 | März 2026 | 🔄 Unterstützt |
 | 0.7.0 | Januar 2026 | 🔄 Unterstützt |
 | 0.6.x | Dezember 2025 | ⏳ Legacy |
 
 ---
 
-**Last Updated**: März 10, 2026
+**Last Updated**: Juni 19, 2026
