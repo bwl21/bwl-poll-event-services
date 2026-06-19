@@ -684,6 +684,41 @@ export async function deleteResponse(
 }
 
 /**
+ * Delete all poll responses for a given event.
+ * Used when an event should be cleared from the poll store without deleting the event itself.
+ */
+export async function deleteResponsesForEvent(eventId: number): Promise<number> {
+    try {
+        const category = await getPollCategory();
+        if (!category) {
+            throw new Error('Poll category not found');
+        }
+
+        const module = await getOrCreateModule(
+            import.meta.env.VITE_KEY || 'bwl-poll-event-services',
+            'Event Service Poll',
+            'Poll extension for ChurchTools event services'
+        );
+
+        const values = await getCustomDataValues<ServicePollEntry>(
+            category.id,
+            module.id
+        );
+
+        const responses = values.filter((value) => value.eventId === eventId && value.id);
+        for (const response of responses) {
+            await deleteCustomDataValue(category.id, response.id!, module.id);
+        }
+
+        debugLog('Deleted', responses.length, 'responses for event', eventId);
+        return responses.length;
+    } catch (error) {
+        console.error('Error deleting responses for event:', error);
+        throw error;
+    }
+}
+
+/**
  * Get all services from masterdata (for admin config)
  */
 export async function getAllServicesFromResponses(): Promise<{ serviceId: number; serviceName: string; categoryName?: string }[]> {

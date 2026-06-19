@@ -24,9 +24,13 @@ import Textarea from 'primevue/textarea';
 import Tag from 'primevue/tag';
 import Dropdown from 'primevue/dropdown';
 import InputText from 'primevue/inputtext';
+import MultiSelect from 'primevue/multiselect';
 
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import App from './App.vue';
+
+// Import and register RevoGrid Web Component
+import { defineCustomElements } from '@revolist/revogrid/loader';
 
 // only import reset.css in development mode
 if (import.meta.env.MODE === 'development') {
@@ -62,7 +66,13 @@ if (import.meta.env.MODE === 'development' && username && password) {
 
 export const KEY = extensionKey;
 
+// Register RevoGrid Web Components
+defineCustomElements();
+
 const app = createApp(App);
+
+// Tell Vue to treat revo-grid as a custom element
+app.config.compilerOptions.isCustomElement = (tag) => tag === 'revo-grid';
 
 app.use(PrimeVue, {
     theme: {
@@ -103,5 +113,6 @@ app.component('Textarea', Textarea);
 app.component('Tag', Tag);
 app.component('Dropdown', Dropdown);
 app.component('InputText', InputText);
+app.component('MultiSelect', MultiSelect);
 
 app.mount('#app');

@@ -158,6 +158,8 @@ Unter jedem Dienst gibt es ein **Kommentarfeld**, um zusätzliche Informationen 
 - Automatisch nach 1 Sekunde gespeichert
 - Und erneut gespeichert, wenn Sie auf "Ja/Vielleicht/Nein" klicken
 
+Nach dem Speichern erscheint oben rechts eine kleine **Toast-Meldung** mit einer Bestätigung oder Fehlermeldung.
+
 #### 6. Antworten anderer sehen
 **Nach Ihrem Klick sehen Sie:**
 - Wer hat **"Ja"** gesagt: "Anna, Peter"
@@ -168,7 +170,15 @@ Unter jedem Dienst gibt es ein **Kommentarfeld**, um zusätzliche Informationen 
 #### 7. Änderungen speichern
 - **Automatisch**: Kommentare werden 1 Sekunde nach Eingabe gespeichert
 - **Explizit**: Durch Klick auf Ja/Vielleicht/Nein wird alles gespeichert
-- **Status**: "✓ Gespeichert" oder "✓ Kommentar gespeichert" bestätigt das Speichern
+- **Rückmeldung**: Eine Toast-Meldung bestätigt das Speichern, z. B. "Gespeichert"
+
+#### 8. Sammelaktionen pro Event
+In jeder Event-Karte gibt es drei Sammelaktionen im Kopfbereich:
+- **Event absagen**: Setzt alle sichtbaren Dienste dieses Events auf "Nein"
+- **Ganzen Tag absagen**: Setzt alle Dienste dieses Tages auf "Nein"
+- **Alle Antworten löschen**: Entfernt alle gespeicherten Antworten zu diesem Event
+
+Während die Aktion läuft, zeigt der Button einen **Spinner**. Danach erscheint eine Toast-Meldung mit Erfolg oder Fehler.
 
 ---
 
@@ -360,16 +370,20 @@ Die Admin-Oberfläche hat **3 Unterbereiche:**
 > **Tipp:** Normalerweise erhalten Planer/Disponenten diese Berechtigung.
 
 #### Benutzer mit Gruppenzugehörigkeit
-- Alle Benutzer sehen automatisch nur die Dienste ihrer Gruppen
-- Keine separaten Berechtigungen nötig
-- Die Berechtigung basiert auf der Gruppenzugehörigkeit in ChurchTools
+- Benutzer sehen nur Events aus Kalendern, für die sie in ChurchTools Sichtbarkeit haben
+- Innerhalb dieser sichtbaren Events sehen Benutzer automatisch nur die Dienste ihrer Gruppen
+- Für normale Benutzer sind daher beide Voraussetzungen nötig:
+  1. **Kalender-Sichtbarkeit** für den betreffenden ChurchTools-Kalender
+  2. **Passende Gruppenzugehörigkeit** für den jeweiligen Dienst
+- Die Dienst-Berechtigung basiert auf der Gruppenzugehörigkeit in ChurchTools
+- Wenn ein Benutzer keine Dienste sieht, prüfen Sie zuerst die Kalender-Sichtbarkeit und danach die Dienstgruppen
 
 ### 3. Berechtigungscheck durchführen (optional)
 
 Nach der Installation können Sie testen:
 1. Als normaler Benutzer anmelden
 2. Die Extension öffnen
-3. Es sollten nur Events mit Diensten Ihrer Gruppen angezeigt werden
+3. Es sollten nur Events aus sichtbaren Kalendern mit Diensten Ihrer Gruppen angezeigt werden
 
 ---
 
@@ -379,9 +393,20 @@ Nach der Installation können Sie testen:
 
 #### **F: Ich sehe keine Events in der Umfrage.**
 **A:** 
+- Überprüfen Sie, ob Sie den betreffenden ChurchTools-Kalender sehen dürfen
 - Überprüfen Sie, ob Sie in den richtigen Gruppen sind
 - Fragen Sie Ihren Administrator, welche Gruppen für welche Dienste zuständig sind
 - Versuchen Sie, den Zeitraum zu ändern (z.B. weiter in die Zukunft)
+
+#### **F: Ich sehe Events, aber bestimmte Dienste fehlen.**
+**A:**
+- Die Extension lädt nur Events aus Kalendern, die Sie sehen dürfen
+- Danach werden die Dienste nach Ihrer ChurchTools-Gruppenzugehörigkeit gefiltert
+- Bitten Sie Ihren Administrator zu prüfen:
+  1. Haben Sie Sichtbarkeit auf den Kalender des Events?
+  2. Sind Sie in einer Gruppe, die dem fehlenden Dienst zugeordnet ist?
+  3. Ist der Dienst in der Admin-Konfiguration der Extension aktiviert?
+- Beispiel: Wenn Hannah keine Dienste sieht, kann bereits fehlende Kalender-Sichtbarkeit die Ursache sein. Erst wenn Hannah den Kalender sehen darf, können die Dienste daraus angezeigt und nach Dienstgruppe gefiltert werden.
 
 #### **F: Meine Antwort wird nicht gespeichert.**
 **A:**
@@ -431,6 +456,12 @@ Nach der Installation können Sie testen:
 - Dies ist z.B. nötig, wenn sich ein Mitarbeiter abmeldet oder die Antwort obsolet ist
 - Gelöschte Antworten können nicht wiederhergestellt werden → mit Bedacht nutzen!
 - Tipp: Statt Löschen kann man auch bearbeiten und auf "keine Angabe" setzen
+
+#### **F: Kann ich alle Antworten eines Events gesammelt löschen?**
+**A:**
+- Ja. In der Event-Karte gibt es die Aktion **"Alle Antworten löschen"**
+- Damit werden alle gespeicherten Antworten zu diesem Event entfernt
+- Das ChurchTools-Event selbst bleibt bestehen
 
 #### **F: Wo finde ich die Excel-Datei nach dem Export?**
 **A:**
