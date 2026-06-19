@@ -71,14 +71,20 @@ const assignmentDisplay = computed(() => {
     if (!props.service.assignments || props.service.assignments.length === 0) {
         return { text: '', severity: 'secondary' as const };
     }
-    const assignment = props.service.assignments[0];
-    const statusText = assignment.isConfirmed ? ' (Zugesagt)' : ' (Angefordert)';
+    const assignments = props.service.assignments;
+    const assignmentNames = assignments
+        .map((assignment) => {
+            const statusText = assignment.isConfirmed ? ' (Zugesagt)' : ' (Angefordert)';
+            return assignment.personName + statusText;
+        })
+        .join(', ');
+
     return {
-        text: assignment.personName + statusText,
-        severity: assignment.isConfirmed
+        text: assignmentNames,
+        severity: assignments.every((assignment) => assignment.isConfirmed)
             ? ('success' as const)
             : ('warn' as const),
-        icon: assignment.isConfirmed ? 'pi-check' : 'pi-question',
+        icon: assignments.every((assignment) => assignment.isConfirmed) ? 'pi-check' : 'pi-question',
     };
 });
 
@@ -167,6 +173,12 @@ const allComments = computed(() => {
     <tr v-if="layout === 'table'" class="service-row">
         <td class="service-name">
             <strong>{{ service.name }}</strong>
+            <Tag
+                v-if="(service.occurrenceCount || 1) > 1"
+                :value="`${service.occurrenceCount}x`"
+                severity="info"
+                class="service-count"
+            />
             <span v-if="service.categoryName" class="service-category">{{ service.categoryName }}</span>
         </td>
         <td class="response-buttons">
@@ -278,6 +290,12 @@ const allComments = computed(() => {
         <div class="service-card-header">
             <div>
                 <strong>{{ service.name }}</strong>
+                <Tag
+                    v-if="(service.occurrenceCount || 1) > 1"
+                    :value="`${service.occurrenceCount}x`"
+                    severity="info"
+                    class="service-count"
+                />
                 <span v-if="service.categoryName" class="service-category">{{ service.categoryName }}</span>
             </div>
             <Tag
@@ -404,6 +422,12 @@ const allComments = computed(() => {
     display: block;
     font-size: 0.75rem;
     font-weight: normal;
+}
+
+.service-count {
+    margin-left: 6px;
+    font-size: 0.7rem;
+    vertical-align: middle;
 }
 
 .button-group {

@@ -9,6 +9,7 @@ import { createLogger } from '../utils/logger';
 import type {
     EventWithServices,
     PollResponse,
+    ServiceInfo,
     ServicePollEntry,
     UserInfo,
 } from '../types';
@@ -75,6 +76,34 @@ const resourceNames = computed(() => {
     return props.event.resources.map((r) => r.name).join(', ');
 });
 
+function groupDuplicateServices(services: ServiceInfo[]): ServiceInfo[] {
+    const grouped = new Map<number, ServiceInfo>();
+
+    for (const service of services) {
+        const existing = grouped.get(service.serviceId);
+        if (!existing) {
+            grouped.set(service.serviceId, {
+                ...service,
+                assignments: [...(service.assignments || [])],
+                occurrenceCount: 1,
+            });
+            continue;
+        }
+
+        existing.occurrenceCount = (existing.occurrenceCount || 1) + 1;
+        existing.assignments = [
+            ...(existing.assignments || []),
+            ...(service.assignments || []),
+        ];
+        existing.isValid = existing.isValid !== false && service.isValid !== false;
+        existing.groupIds = Array.from(
+            new Set([...(existing.groupIds || []), ...(service.groupIds || [])])
+        );
+    }
+
+    return Array.from(grouped.values());
+}
+
 const sortedServices = computed(() => {
     let services = [...props.event.services].sort((a, b) => {
         const sortA = a.sortKey ?? Number.MAX_SAFE_INTEGER;
@@ -111,7 +140,7 @@ const sortedServices = computed(() => {
         });
     }
     
-    return services;
+    return groupDuplicateServices(services);
 });
 
 function getUserResponseForService(serviceId: number): ServicePollEntry | undefined {
