@@ -14,6 +14,7 @@ import {
 } from './pollService';
 import { exportToExcel } from './exportService';
 import { createLogger } from './utils/logger';
+import { getLoadErrorMessage } from './utils/loadError';
 import { getLocalDateString, formatDateOnly } from './utils/date';
 import type { EventWithServices, ServicePollEntry, UserInfo } from './types';
 
@@ -182,8 +183,7 @@ async function loadData() {
     } catch (e) {
         if (seq !== loadSeq) return;
         debugLog('Error loading data:', e);
-        error.value =
-            'Die Dienste konnten nicht geladen werden. Bitte versuchen Sie es später erneut.';
+        error.value = getLoadErrorMessage(e);
     } finally {
         if (seq === loadSeq) {
             loading.value = false;

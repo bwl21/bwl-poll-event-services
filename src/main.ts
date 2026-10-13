@@ -49,6 +49,7 @@ declare const window: Window &
 
 const baseUrl = window.settings?.base_url ?? import.meta.env.VITE_BASE_URL;
 churchtoolsClient.setBaseUrl(baseUrl);
+churchtoolsClient.setRequestTimeout(60_000);
 
 const extensionKey = import.meta.env.VITE_KEY || 'bwl-poll-event-services';
 const shortKey = extensionKey.split('-')[0]; // Get first part, e.g., 'bwl'

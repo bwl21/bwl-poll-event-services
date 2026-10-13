@@ -294,7 +294,7 @@ export async function fetchEventsWithServices(
         return { events: eventsWithServices };
     } catch (error) {
         console.error('Error fetching events with services:', error);
-        return { events: [] };
+        throw error;
     }
 }
 

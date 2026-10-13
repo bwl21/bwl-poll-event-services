@@ -3,11 +3,13 @@ import { ref, onMounted } from 'vue';
 import TabView from 'primevue/tabview';
 import TabPanel from 'primevue/tabpanel';
 import Button from 'primevue/button';
+import Message from 'primevue/message';
 import AdminResponses from './AdminResponses.vue';
 import AdminConfig from './AdminConfig.vue';
 import AdminDataGrid from './AdminDataGrid.vue';
 import { exportToExcel } from '../exportService';
 import { createLogger } from '../utils/logger';
+import { getLoadErrorMessage } from '../utils/loadError';
 import type { ServicePollEntry, EventWithServices } from '../types';
 import { fetchEventsWithServices, getPollConfig, getServiceMasterData } from '../pollService';
 import { getLocalDateString } from '../utils/date';
@@ -29,6 +31,7 @@ const activeTab = ref(0);
 const adminEvents = ref<EventWithServices[]>([]);
 const serviceMasterData = ref<any>(null);
 const loadingAdminEvents = ref(true);
+const adminLoadError = ref<string | null>(null);
 
 // Load all events for admin planning (unfiltered by groups)
 onMounted(async () => {
@@ -44,6 +47,7 @@ onMounted(async () => {
         debugLog('Loaded', adminEvents.value.length, 'admin events');
     } catch (error) {
         console.error('[AdminPanel] Error loading admin events:', error);
+        adminLoadError.value = getLoadErrorMessage(error);
     } finally {
         loadingAdminEvents.value = false;
     }
@@ -74,7 +78,11 @@ function handleExportAll() {
             </h2>
         </div>
 
-        <TabView v-model:activeIndex="activeTab">
+        <Message v-if="adminLoadError" severity="error" :closable="false">
+            {{ adminLoadError }}
+        </Message>
+
+        <TabView v-else v-model:activeIndex="activeTab">
             <TabPanel>
                 <template #header>
                     <div v-tooltip="'Verwalte alle Antworten der Benutzer'">
