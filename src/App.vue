@@ -302,13 +302,15 @@ function handleResponseDeleted(entry: ServicePollEntry) {
     }
 }
 
-function handleResponsesDeleted(eventId: number, deletedCount: number) {
-    allResponses.value = allResponses.value.filter((response) => response.eventId !== eventId);
+function handleResponsesDeleted(eventId: number, userId: number, deletedCount: number) {
+    allResponses.value = allResponses.value.filter(
+        (response) => response.eventId !== eventId || response.userId !== userId
+    );
     debugLog('Deleted responses for event', eventId, 'count:', deletedCount);
     toast.add({
         severity: 'success',
         summary: 'Einträge gelöscht',
-        detail: `${deletedCount} Antworten für dieses Event wurden entfernt.`,
+        detail: `${deletedCount} Ihrer Antworten für dieses Event wurden entfernt.`,
         life: 3000,
     });
 }

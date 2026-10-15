@@ -684,11 +684,14 @@ export async function deleteResponse(
 }
 
 /**
- * Delete all poll responses for a given event.
- * Used when an event should be cleared from the poll store without deleting the event itself.
+ * Delete only the authenticated user's poll responses for a given event.
  */
-export async function deleteResponsesForEvent(eventId: number): Promise<number> {
+export async function deleteOwnResponsesForEvent(eventId: number): Promise<number> {
     try {
+        const user = await getCurrentUser();
+        if (!Number.isInteger(user.id) || user.id <= 0) {
+            throw new Error('Current user could not be identified');
+        }
         const category = await getPollCategory();
         if (!category) {
             throw new Error('Poll category not found');
@@ -705,7 +708,9 @@ export async function deleteResponsesForEvent(eventId: number): Promise<number> 
             module.id
         );
 
-        const responses = values.filter((value) => value.eventId === eventId && value.id);
+        const responses = values.filter(
+            (value) => value.eventId === eventId && value.userId === user.id && value.id
+        );
         for (const response of responses) {
             await deleteCustomDataValue(category.id, response.id!, module.id);
         }

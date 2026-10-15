@@ -4,7 +4,7 @@ import { useToast } from 'primevue/usetoast';
 import Card from 'primevue/card';
 import Button from 'primevue/button';
 import ServiceRow from './ServiceRow.vue';
-import { deleteResponsesForEvent, savePollResponse } from '../pollService';
+import { deleteOwnResponsesForEvent, savePollResponse } from '../pollService';
 import { createLogger } from '../utils/logger';
 import type {
     EventWithServices,
@@ -29,7 +29,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: 'response-saved', entry: ServicePollEntry): void;
-    (e: 'responses-deleted', eventId: number, deletedCount: number): void;
+    (e: 'responses-deleted', eventId: number, userId: number, deletedCount: number): void;
 }>();
 const toast = useToast();
 const bulkActionLoading = ref<'event' | 'day' | 'delete' | null>(null);
@@ -231,15 +231,15 @@ async function declineDay() {
 }
 
 async function deleteEvent() {
-    if (!window.confirm('Möchten Sie alle Antworten zu diesem Event wirklich löschen?')) return;
+    if (!window.confirm('Möchten Sie alle Ihre eigenen Antworten zu diesem Event wirklich löschen? Antworten anderer Personen bleiben erhalten.')) return;
     bulkActionLoading.value = 'delete';
     try {
-        const deletedCount = await deleteResponsesForEvent(props.event.id);
-        emit('responses-deleted', props.event.id, deletedCount);
+        const deletedCount = await deleteOwnResponsesForEvent(props.event.id);
+        emit('responses-deleted', props.event.id, props.currentUser.id, deletedCount);
         toast.add({
             severity: 'success',
             summary: 'Gelöscht',
-            detail: `${deletedCount} Antworten wurden gelöscht.`,
+            detail: `${deletedCount} Ihrer Antworten wurden gelöscht.`,
             life: 2500,
         });
     } catch (e) {
@@ -296,14 +296,14 @@ async function deleteEvent() {
                         v-tooltip="'Alle Dienste dieses Tages mit Nein beantworten'"
                     />
                     <Button
-                        label="Alle Antworten löschen"
+                        label="Alle meine Antworten löschen"
                         icon="pi pi-trash"
                         severity="danger"
                         outlined
                         size="small"
                         :loading="bulkActionLoading === 'delete'"
                         @click="deleteEvent"
-                        v-tooltip="'Entfernt alle gespeicherten Antworten zu diesem Event'"
+                        v-tooltip="'Entfernt nur Ihre eigenen Antworten zu diesem Event'"
                     />
                 </div>
             </div>
